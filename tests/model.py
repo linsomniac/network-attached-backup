@@ -3,9 +3,15 @@
 #  Copyright (c) 2011, Sean Reifschneider, tummy.com, ltd.
 #  All Rights Reserved.
 
-import unittest
+#  allow the test to be run from the "tests" or "tests" parent directory
 import sys
-sys.path.append('..')
+import os
+if os.path.basename(os.getcwd()) == 'tests':
+	sys.path.append('..')
+else:
+	sys.path.append('.')
+
+import unittest
 from nabmodel import *
 	
 class TestModel(unittest.TestCase):
