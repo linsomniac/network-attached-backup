@@ -26,26 +26,24 @@ class TestModel(unittest.TestCase):
 		self.Session = sessionmaker(bind = self.engine)
 
 
-	def test_Config(self):
+	def test_Metadata(self):
 		db = self.Session()
-		c1 = Config()
-		c1.errors_mail_address = 'user@example.com'
+		c1 = Metadata()
 		db.add(c1)
 		db.commit()
 
 		#  verify that we can't insert another configuration entry
 		with self.assertRaises(Exception):
-			c2 = Config()
-			c2.errors_mail_address = 'test@example.com'
+			c2 = Metadata()
 			db.add(c2)
 			db.commit()
 		db.rollback()
 
 		#  verify that only one record is there
-		self.assertEqual(len(db.query(Config).all()), 1)
+		self.assertEqual(len(db.query(Metadata).all()), 1)
 
-		config = Config.get(db)
-		self.assertEqual(config.errors_mail_address, 'user@example.com')
+		config = Metadata.get(db)
+		self.assertEqual(config.id, 1)
 
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestModel)
