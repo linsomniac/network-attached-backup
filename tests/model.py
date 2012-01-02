@@ -7,43 +7,43 @@
 import sys
 import os
 if os.path.basename(os.getcwd()) == 'tests':
-	sys.path.append('..')
+    sys.path.append('..')
 else:
-	sys.path.append('.')
+    sys.path.append('.')
 
 import unittest
 from nabmodel import *
-	
+    
 class TestModel(unittest.TestCase):
-	@classmethod
-	def setUp(self):
-		from sqlalchemy import create_engine
-		self.engine = create_engine('sqlite:///:memory:')
-		Base.metadata.create_all(self.engine)
-		Base.metadata.bind = self.engine
+    @classmethod
+    def setUp(self):
+        from sqlalchemy import create_engine
+        self.engine = create_engine('sqlite:///:memory:')
+        Base.metadata.create_all(self.engine)
+        Base.metadata.bind = self.engine
 
-		from sqlalchemy.orm import sessionmaker
-		self.Session = sessionmaker(bind = self.engine)
+        from sqlalchemy.orm import sessionmaker
+        self.Session = sessionmaker(bind = self.engine)
 
 
-	def test_Metadata(self):
-		db = self.Session()
-		c1 = Metadata()
-		db.add(c1)
-		db.commit()
+    def test_Metadata(self):
+        db = self.Session()
+        c1 = Metadata()
+        db.add(c1)
+        db.commit()
 
-		#  verify that we can't insert another configuration entry
-		with self.assertRaises(Exception):
-			c2 = Metadata()
-			db.add(c2)
-			db.commit()
-		db.rollback()
+        #  verify that we can't insert another configuration entry
+        with self.assertRaises(Exception):
+            c2 = Metadata()
+            db.add(c2)
+            db.commit()
+        db.rollback()
 
-		#  verify that only one record is there
-		self.assertEqual(len(db.query(Metadata).all()), 1)
+        #  verify that only one record is there
+        self.assertEqual(len(db.query(Metadata).all()), 1)
 
-		config = Metadata.get(db)
-		self.assertEqual(config.id, 1)
+        config = Metadata.get(db)
+        self.assertEqual(config.id, 1)
 
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestModel)
