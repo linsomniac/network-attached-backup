@@ -11,6 +11,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Numeric
 from sqlalchemy import BigInteger, SmallInteger
 from sqlalchemy import Interval, CheckConstraint, Boolean, DateTime, Time, Date
 from sqlalchemy.orm import relationship
+import datetime
 
 
 class Metadata(Base):
@@ -19,7 +20,8 @@ class Metadata(Base):
     '''
 
     __tablename__ = 'config'
-    id = Column(Integer, CheckConstraint('id = 1'), primary_key=True)
+    id = Column(Integer, CheckConstraint('id = 1'), primary_key=True,
+            unique=True)
     database_version = Column(Integer)
 
     def __init__(self):
@@ -258,12 +260,13 @@ class HostConfig(Base):
     use_global_filters = Column(Boolean, default=True)
     check_connectivity = Column(Boolean, default=False)
     ping_max_ms = Column(Integer, default=None)
-    daily_history = Column(Integer, default=12, nullable=False)
+    daily_history = Column(Integer, default=12)
     weekly_history = Column(Integer, default=12)
     monthly_history = Column(Integer, default=12)
-    priority = Column(Integer, default=5, nullable=False)
-    rsync_checksum_frequency = Column(Interval, default='1 month')
-    rsync_do_compress = Column(Boolean, default=False, nullable=False)
+    priority = Column(Integer, default=5)
+    rsync_checksum_frequency = Column(Interval,
+            default=datetime.timedelta(days=30))
+    rsync_do_compress = Column(Boolean, default=False)
 
     def __init__(self):
         pass
@@ -324,9 +327,6 @@ class Backup(Base):
     id = Column(Integer, primary_key=True)
     host_id = Column(Integer, ForeignKey('hosts.id'))
     host = relationship(Host, order_by=id, backref='backups')
-    backup_server_id = Column(Integer, ForeignKey('backup_servers.id'))
-    backup_server = relationship(BackupServer, order_by=id,
-            backref='backups')
     storage_id = Column(Integer, ForeignKey('storage.id'))
     storage = relationship(Storage, order_by=id, backref='backups')
     start_time = Column(DateTime, default=None)
