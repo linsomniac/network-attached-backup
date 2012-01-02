@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 #
-#  Copyright (c) 2011, Sean Reifschneider, tummy.com, ltd.
+#  Copyright (c) 2011-2012, Sean Reifschneider, tummy.com, ltd.
 #  All Rights Reserved.
 
 #  allow the test to be run from the "tests" or "tests" parent directory
 import sys
 import os
 if os.path.basename(os.getcwd()) == 'tests':
-    sys.path.append('..')
+    sys.path.append('../lib')
 else:
-    sys.path.append('.')
+    sys.path.append('./lib')
 
 import unittest
 import datetime

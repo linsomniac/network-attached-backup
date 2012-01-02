@@ -18,9 +18,9 @@ import sys, os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('..'))
 if os.path.basename(os.getcwd()) == 'docs':
-    sys.path.append('..')
+    sys.path.append('../lib')
 else:
-    sys.path.append('.')
+    sys.path.append('./lib')
 
 # -- General configuration -----------------------------------------------------
 
