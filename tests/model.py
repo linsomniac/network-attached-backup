@@ -20,7 +20,6 @@ class TestModel(unittest.TestCase):
     def setUp(self):
         nabdb.connect(connect='sqlite:///:memory:')
         nabdb.Base.metadata.create_all()
-        db = nabdb.session()
 
     @classmethod
     def tearDown(self):
