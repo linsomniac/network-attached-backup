@@ -216,7 +216,7 @@ class HostConfig(Base):
     backup when the pings succeed.  This can be useful for backing up
     intermittantly connected machines such as laptops.
 
-    .. py:attribute:: ping_max_ms
+    . py:attribute:: ping_max_ms
 
     If not None, the host will be pinged before a backup, and backups
     will only be done if the average ping-time is below this value.  This
@@ -333,8 +333,8 @@ class Backup(Base):
     end_time = Column(DateTime, default=None)
     backup_pid = Column(Integer, default=None)
     generation = Column(String,
-            CheckConstraint('generation == "daily" or generation == "weekly" '
-                'or generation == "monthly"'),
+            CheckConstraint("generation = 'daily' or generation = 'weekly' "
+                "or generation = 'monthly'"),
             nullable=False)
     successful = Column(Boolean, default=None)
     was_checksum_run = Column(Boolean, nullable=False)
