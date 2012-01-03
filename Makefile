@@ -7,5 +7,6 @@ check:
 	pep8 --show-source bin/harness
 
 commit: check
+	git diff >/tmp/git-diff.out 2>&1
 	git commit -a
 	git push
