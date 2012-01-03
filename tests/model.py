@@ -13,31 +13,30 @@ else:
 
 import unittest
 import datetime
-from nabmodel import *
+from nabdb import *
 
 class TestModel(unittest.TestCase):
     @classmethod
     def setUp(self):
-        from sqlalchemy import create_engine
-        self.engine = create_engine('sqlite:///:memory:')
-        Base.metadata.create_all(self.engine)
-        Base.metadata.bind = self.engine
+        nabdb.connect(connect='sqlite:///:memory:')
+        nabdb.Base.metadata.create_all()
+        db = nabdb.session()
 
-        from sqlalchemy.orm import sessionmaker
-        self.Session = sessionmaker(bind = self.engine)
-
-        db = self.Session()
-        c1 = Metadata()
-        db.add(c1)
-        db.commit()
+    @classmethod
+    def tearDown(self):
+        nabdb.close()
 
     def test_Metadata(self):
-        db = self.Session()
+        db = nabdb.session()
+
+        metadata1 = Metadata()
+        db.add(metadata1)
+        db.commit()
 
         #  verify that we can't insert another configuration entry
         with self.assertRaises(Exception):
-            c2 = Metadata()
-            db.add(c2)
+            metadata2 = Metadata()
+            db.add(metadata2)
             db.commit()
         db.rollback()
 
@@ -48,7 +47,11 @@ class TestModel(unittest.TestCase):
         self.assertEqual(config.id, 1)
 
     def test_Schema(self):
-        db = self.Session()
+        db = nabdb.session()
+
+        metadata = Metadata()
+        db.add(metadata)
+        db.commit()
 
         server = BackupServer()
         server.hostname = 'server.example.com'
