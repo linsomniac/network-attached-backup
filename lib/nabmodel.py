@@ -126,8 +126,8 @@ class Storage(Base):
         pass
 
     def __repr__(self):
-        return '<Storage(%s, %s, %s, %s)>' % (self.server.hostname,
-                self.method, self.method, self.arg1)
+        return '<Storage(%s, %s:%s)>' % (self.backup_server.hostname,
+                self.method, self.arg1)
 
 
 class Host(Base):
@@ -359,8 +359,9 @@ class FilterRule(Base):
 
     .. py:attribute:: priority
 
-    Priority of this rule in relation to other rules, floating-point between
-    0 and 1 (inclusive).
+    Priority of this rule in relation to other rules, usually a string of
+    digits, where "45" comes halfway between "4" and "5".  Think "dewey
+    decimal system".
 
     .. py:attribute:: rsync_rule
 
@@ -371,8 +372,7 @@ class FilterRule(Base):
     id = Column(Integer, primary_key=True)
     host_id = Column(Integer, ForeignKey('hosts.id'))
     host = relationship(Host, order_by=id, backref='filter_rules')
-    priority = Column(Numeric(precision=11, scale=10),
-            default=0.5, nullable=False)
+    priority = Column(String, default='5', nullable=False)
     rsync_rule = Column(String, nullable=False)
 
     def __init__(self):
