@@ -11,6 +11,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Numeric
 from sqlalchemy import BigInteger, SmallInteger
 from sqlalchemy import Interval, CheckConstraint, Boolean, DateTime, Time, Date
 from sqlalchemy.orm import relationship
+from sqlalchemy.exc import IntegrityError
 import datetime
 
 
@@ -179,11 +180,15 @@ class Host(Base):
     window_start = Column(Time, default=None)
     window_end = Column(Time, default=None)
 
+    def backups_with_pids(self):
+        '''Return a list of backups that have a pid != None'''
+        return [backup for backup in self.backups if backup.backup_pid != None]
+
     def __init__(self):
         pass
 
     def __repr__(self):
-        return '<Host(%s)>' % (self.hostname,)
+        return '<Host(id=%s, hostname="%s")>' % (self.id, self.hostname)
 
 
 class HostConfig(Base):

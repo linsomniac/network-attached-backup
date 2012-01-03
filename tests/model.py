@@ -14,7 +14,6 @@ else:
 import unittest
 import datetime
 from nabdb import *
-from sqlalchemy.exc import IntegrityError
 
 
 class TestModel(unittest.TestCase):
@@ -47,6 +46,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(len(db.query(Metadata).all()), 1)
 
         config = Metadata.get(db)
+        self.assertEqual(config.id, 1)
         self.assertEqual(config.id, 1)
 
     def test_Schema(self):
@@ -319,5 +319,4 @@ class TestModel(unittest.TestCase):
         repr(db.query(HostConfig).first())
         repr(db.query(Backup).first())
 
-suite = unittest.TestLoader().loadTestsFromTestCase(TestModel)
-unittest.TextTestRunner(verbosity=2).run(suite)
+print unittest.main()

@@ -54,9 +54,12 @@ class DbWrapper:
 
         :param list path_list: (Default None)  A list of file names to check
         for the database connect string.  If `path_list` is `None`, then a
-        standard list of paths is used.  The `path_list` is walked, stopping
-        when the listed file exists, and that is loaded as Python code.
-        Any files after the first existing file are ignored.
+        standard list of paths is used.  If NAB_DBCREDENTIALS environment
+        variable is set, that is used for the credentials file.
+
+        The `path_list` is walked, stopping when the listed file exists,
+        and that is loaded as Python code.  Any files after the first
+        existing file are ignored.
 
         :param str connect: (Default None)  If a string, the `path_list`
         will be ignored and this string will be used as the connect string.
@@ -70,10 +73,14 @@ class DbWrapper:
         import sys
 
         if path_list == None:
-            path_list = [
-                    '/etc/network-attached-backup/dbcredentials',
-                    'dbcredentials',
-                    ]
+            if 'NAB_DBCREDENTIALS' in os.environ:
+                path_list = [
+                        os.path.expanduser(os.environ['NAB_DBCREDENTIALS'])]
+            else:
+                path_list = [
+                        '/etc/network-attached-backup/dbcredentials',
+                        'dbcredentials',
+                        ]
 
         if connect == None:
             namespace = {}

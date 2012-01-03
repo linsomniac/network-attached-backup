@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+#
+#  Copyright (c) 2012, Sean Reifschneider, tummy.com, ltd.
+#  All Rights Reserved.
+
+'''
+The engine which runs the backup process.  This is called with the name
+of a Host() which is to be backed up.
+'''
+
+import sys
+sys.path.append('lib')
+
+from nabdb import *
+db = nabdb.session()
+import nabsupp
+
+
+hostname = sys.argv[1]
+host = db.query(Host).filter_by(hostname=hostname).first()
+
+if nabsupp.are_backups_currently_running(db, host):
+    sys.stderr.write('ERROR: Backups are already running.  Aborting.\n')
+    sys.exit(1)
