@@ -9,16 +9,20 @@ of a Host() which is to be backed up.
 '''
 
 import sys
-sys.path.append('lib')
+sys.path.append('lib')              # ZFSBACKUPLIBDIR
 
+import nabsupp
 from nabdb import *
 db = nabdb.session()
-import nabsupp
 
 
-hostname = sys.argv[1]
-host = db.query(Host).filter_by(hostname=hostname).first()
+def run_backup_for_host(hostname):
+    host = db.query(Host).filter_by(hostname=hostname).first()
 
-if nabsupp.are_backups_currently_running(db, host):
-    sys.stderr.write('ERROR: Backups are already running.  Aborting.\n')
-    sys.exit(1)
+    if nabsupp.are_backups_currently_running(db, host):
+        sys.stderr.write('ERROR: Backups are already running.  Aborting.\n')
+        sys.exit(1)
+
+
+################################
+run_backup_for_host(sys.argv[1])

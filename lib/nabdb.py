@@ -102,7 +102,7 @@ class DbWrapper:
         from sqlalchemy import create_engine
         self.engine = create_engine(connect, echo=echo)
 
-        self.Base = Base        #  Base is from nabmodel
+        self.Base = Base        # Base is from nabmodel
         self.Base.metadata.bind = self.engine
 
         from sqlalchemy.orm import sessionmaker

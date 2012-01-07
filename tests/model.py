@@ -275,7 +275,6 @@ class TestModel(unittest.TestCase):
             db.commit()
         db.rollback()
 
-
         #  verify that date must be set
         with self.assertRaises(IntegrityError):
             usage_client1 = HostUsage()
