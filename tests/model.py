@@ -744,4 +744,58 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
+    def test_BackupsWithPids(self):
+        '''Test finding backups that have PIDs and clearing them.
+        '''
+
+        #  load the database with the schema test
+        self.test_SchemaBasic()
+
+        import os
+        import random
+        import nabsupp
+        db = nabdb.session()
+
+        client1 = db.query(Host).filter_by(hostname='client1.example.com'
+                ).first()
+
+        def add_more_backups(db, with_known_pid = False):
+            for i in range(10):
+                backup = Backup()
+                backup.generation = 'monthly'
+                backup.was_checksum_run = False
+                backup.host = client1
+                if with_known_pid:
+                    backup.backup_pid = os.getpid()
+                    with_known_pid = False
+                else:
+                    for foo in range(100):
+                        pid = random.randint(1000, 60000)
+                        try:
+                            os.kill(pid, 0)
+                        except OSError:
+                            backup.backup_pid = pid
+                            break
+                    else:
+                        raise ValueError('Unable to find free PID.')
+                db.add(backup)
+                db.commit()
+
+        add_more_backups(db)
+        self.assertEqual(client1.are_backups_currently_running(db), False)
+        self.assertEqual(len(client1.backups_with_pids()), 0)
+
+        add_more_backups(db)
+        self.assertEqual(len(client1.backups_with_pids()), 10)
+        nabsupp.clear_stale_backup_pids(db, client1)
+        self.assertEqual(len(client1.backups_with_pids()), 0)
+        self.assertEqual(client1.are_backups_currently_running(db), False)
+
+        add_more_backups(db, with_known_pid=True)
+        self.assertEqual(len(client1.backups_with_pids()), 10)
+        self.assertEqual(client1.are_backups_currently_running(db), True)
+        nabsupp.clear_stale_backup_pids(db, client1)
+        self.assertEqual(len(client1.backups_with_pids()), 1)
+        self.assertEqual(client1.are_backups_currently_running(db), True)
+
 print unittest.main()

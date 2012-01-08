@@ -13,6 +13,7 @@ from sqlalchemy import Interval, CheckConstraint, Boolean, DateTime, Time, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.exc import IntegrityError
 import datetime
+import nabsupp
 
 
 class Metadata(Base):
@@ -179,6 +180,14 @@ class Host(Base):
     next_backup = Column(DateTime, default=None)
     window_start = Column(Time, default=None)
     window_end = Column(Time, default=None)
+
+    def are_backups_currently_running(self, db):
+        '''Are there any backups currently running for this host?
+
+        :rtype: Boolean indicating whether there are any backups running
+        '''
+        nabsupp.clear_stale_backup_pids(db, self)
+        return len(self.backups_with_pids()) > 0
 
     def backups_with_pids(self):
         '''Return a list of backups that have a pid != None'''
