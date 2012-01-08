@@ -114,10 +114,7 @@ class TestModel(unittest.TestCase):
                 ).first()
         zfs_storage = db.query(Storage).first()
 
-        backup1_client1 = Backup()
-        backup1_client1.generation = 'daily'
-        backup1_client1.full_checksum = False
-        backup1_client1.host = client1
+        backup1_client1 = Backup(client1, 'daily', full_checksum=False)
         backup1_client1.storage = client1.backup_server.storage[0]
         backup1_client1.start_time = datetime.datetime(
                 2012, 01, 02, 00, 00, 00)
@@ -128,10 +125,7 @@ class TestModel(unittest.TestCase):
                 '/backups/client1.example.net@2012-01-02_000000')
         db.add(backup1_client1)
 
-        backup2_client1 = Backup()
-        backup2_client1.generation = 'daily'
-        backup2_client1.full_checksum = False
-        backup2_client1.host = client1
+        backup2_client1 = Backup(client1, 'daily', full_checksum=False)
         backup2_client1.storage = client1.backup_server.storage[0]
         backup2_client1.start_time = datetime.datetime(
                 2012, 01, 01, 00, 00, 01)
@@ -142,10 +136,7 @@ class TestModel(unittest.TestCase):
                 '/backups/client1.example.net@2012-01-01_000001')
         db.add(backup2_client1)
 
-        backup1_client2 = Backup()
-        backup1_client2.generation = 'daily'
-        backup1_client2.full_checksum = False
-        backup1_client2.host = client2
+        backup1_client2 = Backup(client2, 'daily', full_checksum=False)
         backup1_client2.storage = client2.backup_server.storage[0]
         backup1_client2.start_time = datetime.datetime(
                 2012, 01, 02, 00, 00, 00)
@@ -156,10 +147,7 @@ class TestModel(unittest.TestCase):
                 '/backups/client2.example.net@2012-01-02_000000')
         db.add(backup1_client2)
 
-        backup2_client2 = Backup()
-        backup2_client2.generation = 'weekly'
-        backup2_client2.full_checksum = False
-        backup2_client2.host = client2
+        backup2_client2 = Backup(client2, 'weekly', full_checksum=False)
         backup2_client2.storage = client2.backup_server.storage[0]
         backup2_client2.start_time = datetime.datetime(
                 2012, 01, 01, 00, 01, 00)
@@ -266,10 +254,7 @@ class TestModel(unittest.TestCase):
 
         #  invalid generation name
         with self.assertRaises(IntegrityError):
-            backup1_client1 = Backup()
-            backup1_client1.host = client1
-            backup1_client1.full_checksum = True
-            backup1_client1.generation = 'hourly'
+            backup1_client1 = Backup(client1, 'hourly', full_checksum=True)
             backup1_client1.storage = client1.backup_server.storage[0]
             backup1_client1.start_time = datetime.datetime(
                     2012, 01, 03, 00, 00, 00)
@@ -462,10 +447,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'monthly')
 
-        backup = Backup()
-        backup.generation = 'monthly'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'monthly', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -478,10 +460,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'weekly')
 
-        backup = Backup()
-        backup.generation = 'weekly'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'weekly', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -494,10 +473,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
-        backup = Backup()
-        backup.generation = 'daily'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'daily', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -540,9 +516,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'weekly')
 
-        backup = Backup()
-        backup.generation = 'monthly'
-        backup.full_checksum = False
+        backup = Backup(client1, 'monthly', full_checksum=False)
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -556,10 +530,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'weekly')
 
-        backup = Backup()
-        backup.generation = 'weekly'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'weekly', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -572,10 +543,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
-        backup = Backup()
-        backup.generation = 'daily'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'daily', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -618,10 +586,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
-        backup = Backup()
-        backup.generation = 'monthly'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'monthly', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -634,10 +599,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
-        backup = Backup()
-        backup.generation = 'weekly'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'weekly', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -650,10 +612,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
-        backup = Backup()
-        backup.generation = 'daily'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'daily', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -696,10 +655,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'monthly')
 
-        backup = Backup()
-        backup.generation = 'monthly'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'monthly', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -712,10 +668,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
-        backup = Backup()
-        backup.generation = 'weekly'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'weekly', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -728,10 +681,7 @@ class TestModel(unittest.TestCase):
 
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
-        backup = Backup()
-        backup.generation = 'daily'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'daily', full_checksum=False)
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
@@ -761,10 +711,7 @@ class TestModel(unittest.TestCase):
 
         def add_more_backups(db, with_known_pid=False):
             for i in range(10):
-                backup = Backup()
-                backup.generation = 'monthly'
-                backup.full_checksum = False
-                backup.host = client1
+                backup = Backup(client1, 'monthly', full_checksum=False)
                 if with_known_pid:
                     backup.backup_pid = os.getpid()
                     with_known_pid = False
@@ -811,10 +758,7 @@ class TestModel(unittest.TestCase):
                 ).first()
         config = client1.configs[0]
 
-        backup = Backup()
-        backup.generation = 'monthly'
-        backup.full_checksum = False
-        backup.host = client1
+        backup = Backup(client1, 'monthly', full_checksum=False)
         db.add(backup)
         db.commit()
 

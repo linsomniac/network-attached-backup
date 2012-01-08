@@ -428,8 +428,10 @@ class Backup(Base):
     harness_returncode = Column(Integer, default=None)
     snapshot_location = Column(String)
 
-    def __init__(self):
-        pass
+    def __init__(self, host, generation, full_checksum):
+        self.generation = generation
+        self.full_checksum = full_checksum
+        self.host = host
 
     def __repr__(self):
         return '<Backup(%s: %s@%s)>' % (self.id, self.host.hostname,

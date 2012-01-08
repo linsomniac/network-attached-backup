@@ -30,9 +30,8 @@ def run_backup_for_host(hostname):
         sys.exit(1)
 
     backup = Backup()
-    backup.generation = host.find_backup_generation(db)
-    backup.full_checksum = host.ready_for_checksum(db)
-    backup.host = host
+    backup.setup(host=host, generation=host.find_backup_generation(db),
+            full_checksum=host.ready_for_checksum(db))
     backup.backup_pid = os.getpid()
     db.add(backup)
     db.commit()
