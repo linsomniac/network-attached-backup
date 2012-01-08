@@ -49,7 +49,7 @@ class TestModel(unittest.TestCase):
         self.assertEqual(config.id, 1)
         self.assertEqual(config.id, 1)
 
-    def test_Schema(self):
+    def test_SchemaBasic(self):
         '''Test the schema by loading data into it.'''
         db = nabdb.session()
 
@@ -99,57 +99,72 @@ class TestModel(unittest.TestCase):
         config_client2.use_global_filters = False
         db.add(config_client2)
 
+        db.commit()
+
+    def test_SchemaAdditional(self):
+        '''Additional schema resources for testing.
+        This schema produces additional resources, but it may conflict with
+        testing of things beyond the basic schema.'''
+        self.test_SchemaBasic()
+        db = nabdb.session()
+
+        client1 = db.query(Host).filter_by(hostname='client1.example.com'
+                ).first()
+        client2 = db.query(Host).filter_by(hostname='client2.example.com'
+                ).first()
+        zfs_storage = db.query(Storage).first()
+
         backup1_client1 = Backup()
+        backup1_client1.generation = 'daily'
+        backup1_client1.was_checksum_run = False
         backup1_client1.host = client1
         backup1_client1.storage = client1.backup_server.storage[0]
         backup1_client1.start_time = datetime.datetime(
                 2012, 01, 02, 00, 00, 00)
         backup1_client1.end_time = datetime.datetime(2012, 01, 02, 00, 07, 32)
-        backup1_client1.generation = 'daily'
         backup1_client1.successful = True
-        backup1_client1.was_checksum_run = False
         backup1_client1.harness_returncode = 0
         backup1_client1.snapshot_location = (
                 '/backups/client1.example.net@2012-01-02_000000')
         db.add(backup1_client1)
 
         backup2_client1 = Backup()
+        backup2_client1.generation = 'daily'
+        backup2_client1.was_checksum_run = False
         backup2_client1.host = client1
         backup2_client1.storage = client1.backup_server.storage[0]
         backup2_client1.start_time = datetime.datetime(
                 2012, 01, 01, 00, 00, 01)
         backup2_client1.end_time = datetime.datetime(2012, 01, 01, 00, 8, 11)
-        backup2_client1.generation = 'daily'
         backup2_client1.successful = False
-        backup2_client1.was_checksum_run = False
         backup2_client1.harness_returncode = 1
         backup2_client1.snapshot_location = (
                 '/backups/client1.example.net@2012-01-01_000001')
         db.add(backup2_client1)
 
         backup1_client2 = Backup()
+        backup1_client2.generation = 'daily'
+        backup1_client2.was_checksum_run = False
         backup1_client2.host = client2
         backup1_client2.storage = client2.backup_server.storage[0]
         backup1_client2.start_time = datetime.datetime(
                 2012, 01, 02, 00, 00, 00)
         backup1_client2.end_time = datetime.datetime(2012, 01, 02, 00, 07, 32)
-        backup1_client2.generation = 'daily'
         backup1_client2.successful = True
-        backup1_client2.was_checksum_run = False
         backup1_client2.harness_returncode = 0
         backup1_client2.snapshot_location = (
                 '/backups/client2.example.net@2012-01-02_000000')
         db.add(backup1_client2)
 
         backup2_client2 = Backup()
+        backup2_client2.generation = 'weekly'
+        backup2_client2.was_checksum_run = False
         backup2_client2.host = client2
         backup2_client2.storage = client2.backup_server.storage[0]
         backup2_client2.start_time = datetime.datetime(
                 2012, 01, 01, 00, 01, 00)
         backup2_client2.end_time = datetime.datetime(2012, 01, 01, 00, 07, 32)
-        backup2_client2.generation = 'weekly'
         backup2_client2.successful = True
-        backup2_client2.was_checksum_run = False
         backup2_client2.harness_returncode = 0
         backup2_client2.snapshot_location = (
                 '/backups/client2.example.net@2012-01-01_000100')
@@ -213,7 +228,7 @@ class TestModel(unittest.TestCase):
         '''Test for things that should fail in the schema.'''
 
         #  load the database with the schema test
-        self.test_Schema()
+        self.test_SchemaAdditional()
 
         db = nabdb.session()
 
@@ -253,12 +268,13 @@ class TestModel(unittest.TestCase):
         with self.assertRaises(IntegrityError):
             backup1_client1 = Backup()
             backup1_client1.host = client1
+            backup1_client1.was_checksum_run = True
+            backup1_client1.generation = 'hourly'
             backup1_client1.storage = client1.backup_server.storage[0]
             backup1_client1.start_time = datetime.datetime(
                     2012, 01, 03, 00, 00, 00)
             backup1_client1.end_time = datetime.datetime(
                     2012, 01, 03, 00, 07, 32)
-            backup1_client1.generation = 'daily'
             backup1_client1.successful = True
             backup1_client1.was_checksum_run = False
             backup1_client1.harness_returncode = 0
@@ -304,7 +320,7 @@ class TestModel(unittest.TestCase):
         '''Verify that database objects can be formatted as strings.'''
 
         #  load the database with the schema test
-        self.test_Schema()
+        self.test_SchemaAdditional()
 
         db = nabdb.session()
 
@@ -317,5 +333,415 @@ class TestModel(unittest.TestCase):
         repr(db.query(Metadata).first())
         repr(db.query(HostConfig).first())
         repr(db.query(Backup).first())
+
+    def test_MergedConfigs(self):
+        '''Test the merging of global and host configurations.'''
+
+        #  load the database with the schema test
+        self.test_SchemaBasic()
+
+        db = nabdb.session()
+
+        client1 = db.query(Host).filter_by(hostname='client1.example.com'
+                ).first()
+
+        #  delete the old configs
+        db.delete(client1.configs[0])
+        db.flush()
+        db.delete(db.query(HostConfig).filter_by(host_id=None).first())
+        db.flush()
+        db.commit()
+
+        config_default = HostConfig()
+        config_default.alerts_mail_address = 'sysadmin@example.com'
+        config_default.failure_warn_after = datetime.timedelta(days=3)
+        config_default.rsync_checksum_frequency = datetime.timedelta(days=30)
+        config_default.rsync_do_compress = False
+        config_default.use_global_filters = True
+        config_default.priority = 4
+        config_default.check_connectivity = False
+        config_default.ping_max_ms = 30
+        config_default.daily_history = 7
+        config_default.weekly_history = 6
+        config_default.monthly_history = 5
+        db.add(config_default)
+
+        config_client1 = HostConfig()
+        config_client1.host = client1
+        db.add(config_client1)
+        db.commit()
+
+        self.assertEqual(client1.merged_configs(db).monthly_history, 5)
+        config_client1.monthly_history = 3
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).monthly_history, 3)
+
+        self.assertEqual(client1.merged_configs(db).weekly_history, 6)
+        config_client1.weekly_history = 2
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).weekly_history, 2)
+
+        self.assertEqual(client1.merged_configs(db).daily_history, 7)
+        config_client1.daily_history = 1
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).daily_history, 1)
+
+        self.assertEqual(client1.merged_configs(db).ping_max_ms, 30)
+        config_client1.ping_max_ms = 29
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).ping_max_ms, 29)
+
+        self.assertEqual(client1.merged_configs(db).priority, 4)
+        config_client1.priority = 8
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).priority, 8)
+
+        self.assertEqual(client1.merged_configs(db).alerts_mail_address,
+                'sysadmin@example.com')
+        config_client1.alerts_mail_address = 'rooter@example.com'
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).alerts_mail_address,
+                'rooter@example.com')
+
+        self.assertEqual(str(client1.merged_configs(db).failure_warn_after),
+                '3 days, 0:00:00')
+        config_client1.failure_warn_after = datetime.timedelta(days=4)
+        db.commit()
+        self.assertEqual(str(client1.merged_configs(db).failure_warn_after),
+                '4 days, 0:00:00')
+
+        self.assertEqual(client1.merged_configs(db).use_global_filters, True)
+        config_client1.use_global_filters = False
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).use_global_filters, False)
+
+        self.assertEqual(client1.merged_configs(db).check_connectivity, False)
+        config_client1.check_connectivity = True
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).check_connectivity, True)
+
+        self.assertEqual(
+                str(client1.merged_configs(db).rsync_checksum_frequency),
+                '30 days, 0:00:00')
+        config_client1.rsync_checksum_frequency = datetime.timedelta(days=29)
+        db.commit()
+        self.assertEqual(
+                str(client1.merged_configs(db).rsync_checksum_frequency),
+                '29 days, 0:00:00')
+
+        self.assertEqual(client1.merged_configs(db).rsync_do_compress, False)
+        config_client1.rsync_do_compress = True
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).rsync_do_compress, True)
+
+    def test_FindBackupGeneration(self):
+        '''Test the code that finds the next generation of backup to run.'''
+
+        #  load the database with the schema test
+        self.test_SchemaBasic()
+
+        db = nabdb.session()
+
+        client1 = db.query(Host).filter_by(hostname='client1.example.com'
+                ).first()
+
+        #  delete the old configs
+        db.delete(client1.configs[0])
+        db.flush()
+        db.delete(db.query(HostConfig).filter_by(host_id=None).first())
+        db.flush()
+        db.commit()
+
+        config = HostConfig()
+        config.host = client1
+        config.daily_history = 4
+        config.weekly_history = 3
+        config.monthly_history = 2
+        db.add(config)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'monthly')
+
+        backup = Backup()
+        backup.generation = 'monthly'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'weekly')
+
+        backup = Backup()
+        backup.generation = 'weekly'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+        backup = Backup()
+        backup.generation = 'daily'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+    def test_FindBackupGenerationNoMonthly(self):
+        '''Test the code that finds the next generation of backup to run.
+        This test has the monthly backups disabled.
+        '''
+
+        #  load the database with the schema test
+        self.test_SchemaBasic()
+
+        db = nabdb.session()
+
+        client1 = db.query(Host).filter_by(hostname='client1.example.com'
+                ).first()
+
+        #  delete the old configs
+        db.delete(client1.configs[0])
+        db.flush()
+        db.delete(db.query(HostConfig).filter_by(host_id=None).first())
+        db.flush()
+        db.commit()
+
+        config = HostConfig()
+        config.host = client1
+        config.daily_history = 4
+        config.weekly_history = 3
+        config.monthly_history = 0
+        db.add(config)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'weekly')
+
+        backup = Backup()
+        backup.generation = 'monthly'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'weekly')
+
+        backup = Backup()
+        backup.generation = 'weekly'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+        backup = Backup()
+        backup.generation = 'daily'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+    def test_FindBackupGenerationNoWeeklyOrMonthly(self):
+        '''Test the code that finds the next generation of backup to run.
+        This test has the monthly and weekly backups disabled.
+        '''
+
+        #  load the database with the schema test
+        self.test_SchemaBasic()
+
+        db = nabdb.session()
+
+        client1 = db.query(Host).filter_by(hostname='client1.example.com'
+                ).first()
+
+        #  delete the old configs
+        db.delete(client1.configs[0])
+        db.flush()
+        db.delete(db.query(HostConfig).filter_by(host_id=None).first())
+        db.flush()
+        db.commit()
+
+        config = HostConfig()
+        config.host = client1
+        config.daily_history = 4
+        config.weekly_history = 0
+        config.monthly_history = 0
+        db.add(config)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+        backup = Backup()
+        backup.generation = 'monthly'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+        backup = Backup()
+        backup.generation = 'weekly'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+        backup = Backup()
+        backup.generation = 'daily'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+    def test_FindBackupGenerationNoWeekly(self):
+        '''Test the code that finds the next generation of backup to run.
+        This test has the weekly backups disabled.
+        '''
+
+        #  load the database with the schema test
+        self.test_SchemaBasic()
+
+        db = nabdb.session()
+
+        client1 = db.query(Host).filter_by(hostname='client1.example.com'
+                ).first()
+
+        #  delete the old configs
+        db.delete(client1.configs[0])
+        db.flush()
+        db.delete(db.query(HostConfig).filter_by(host_id=None).first())
+        db.flush()
+        db.commit()
+
+        config = HostConfig()
+        config.host = client1
+        config.daily_history = 4
+        config.weekly_history = 0
+        config.monthly_history = 2
+        db.add(config)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'monthly')
+
+        backup = Backup()
+        backup.generation = 'monthly'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+        backup = Backup()
+        backup.generation = 'weekly'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
+
+        backup = Backup()
+        backup.generation = 'daily'
+        backup.was_checksum_run = False
+        backup.host = client1
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.find_backup_generation(db), 'daily')
 
 print unittest.main()

@@ -7,7 +7,7 @@
 
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
-from sqlalchemy import Column, Integer, String, ForeignKey, Numeric
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy import BigInteger, SmallInteger
 from sqlalchemy import Interval, CheckConstraint, Boolean, DateTime, Time, Date
 from sqlalchemy.orm import relationship
@@ -184,6 +184,39 @@ class Host(Base):
         '''Return a list of backups that have a pid != None'''
         return [backup for backup in self.backups if backup.backup_pid != None]
 
+    def merged_configs(self, db):
+        '''Return an object that combines the host and global configs.'''
+        class MergedConfigs:
+            def __init__(self, configs, db):
+                self.configs = configs[0]
+                self.global_configs = db.query(HostConfig).filter_by(
+                        host_id=None).first()
+
+            def __getattr__(self, attr):
+                hostconfig = getattr(self.configs, attr)
+                if hostconfig != None:
+                    return hostconfig
+                return getattr(self.global_configs, attr)
+
+        return MergedConfigs(self.configs, db)
+
+    def find_backup_generation(self, db):
+        '''Return the name of the backup generation for the next backup.'''
+        for history, generation, strftime in [
+                (self.merged_configs(db).monthly_history, 'monthly', '%Y-%m'),
+                (self.merged_configs(db).weekly_history, 'weekly', '%Y-%U'),
+                ]:
+            if history:
+                for backup in db.query(Backup).filter_by(host=self,
+                        successful=True, generation=generation):
+                    if (backup.start_time.strftime(strftime)
+                            == datetime.datetime.now().strftime(strftime)):
+                        break
+                else:
+                    return generation
+
+        return 'daily'
+
     def __init__(self):
         pass
 
@@ -262,22 +295,47 @@ class HostConfig(Base):
     host = relationship(Host, order_by=id, backref='configs')
     alerts_mail_address = Column(String)
     failure_warn_after = Column(Interval)
-    use_global_filters = Column(Boolean, default=True)
-    check_connectivity = Column(Boolean, default=False)
-    ping_max_ms = Column(Integer, default=None)
-    daily_history = Column(Integer, default=12)
-    weekly_history = Column(Integer, default=12)
-    monthly_history = Column(Integer, default=12)
-    priority = Column(Integer, default=5)
-    rsync_checksum_frequency = Column(Interval,
-            default=datetime.timedelta(days=30))
-    rsync_do_compress = Column(Boolean, default=False)
+    use_global_filters = Column(Boolean)
+    check_connectivity = Column(Boolean)
+    ping_max_ms = Column(Integer)
+    daily_history = Column(Integer)
+    weekly_history = Column(Integer)
+    monthly_history = Column(Integer)
+    priority = Column(Integer)
+    rsync_checksum_frequency = Column(Interval)
+    rsync_do_compress = Column(Boolean)
+
+    def get_hostname(self):
+        '''Return the hostname or "<GLOBAL>" for the global config.'''
+        if self.host_id == None:
+            return '<GLOBAL>'
+        return self.host.hostname
+
+    def as_string(self):
+        '''Return a string of the values of this record'''
+        s = ''
+        for attr in (
+                'alerts_mail_address',
+                'failure_warn_after',
+                'use_global_filters',
+                'check_connectivity',
+                'ping_max_ms',
+                'daily_history',
+                'weekly_history',
+                'monthly_history',
+                'priority',
+                'rsync_checksum_frequency',
+                'rsync_do_compress',
+                ):
+            s += '%s=%s ' % (attr, getattr(self, attr))
+        return s
 
     def __init__(self):
         pass
 
     def __repr__(self):
-        return '<HostConfig(%s)>' % (self.id,)
+        return '<HostConfig(id=%s, hostname=%s)>' % (self.id,
+                self.get_hostname())
 
 
 class Backup(Base):

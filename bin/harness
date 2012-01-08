@@ -23,6 +23,11 @@ def run_backup_for_host(hostname):
         sys.stderr.write('ERROR: Backups are already running.  Aborting.\n')
         sys.exit(1)
 
+    if not host.active:
+        sys.stderr.write('This host is not enabled for backups '
+                '(active=False)\n')
+        sys.exit(1)
+
 
 ################################
 run_backup_for_host(sys.argv[1])
