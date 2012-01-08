@@ -8,6 +8,7 @@ The engine which runs the backup process.  This is called with the name
 of a Host() which is to be backed up.
 '''
 
+import os
 import sys
 sys.path.append('lib')              # ZFSBACKUPLIBDIR
 
@@ -28,6 +29,13 @@ def run_backup_for_host(hostname):
                 '(active=False)\n')
         sys.exit(1)
 
+    backup = Backup()
+    backup.generation = host.find_backup_generation(db)
+    backup.full_checksum = host.ready_for_checksum(db)
+    backup.host = host
+    backup.backup_pid = os.getpid()
+    db.add(backup)
+    db.commit()
 
 ################################
 run_backup_for_host(sys.argv[1])

@@ -397,7 +397,7 @@ class Backup(Base):
 
     Was this backup considered successful?
 
-    .. py:attribute:: was_checksum_run
+    .. py:attribute:: full_checksum
 
     Trus if this backup did a full checksum run.
 
@@ -424,7 +424,7 @@ class Backup(Base):
                 "or generation = 'monthly'"),
             nullable=False)
     successful = Column(Boolean, default=None)
-    was_checksum_run = Column(Boolean, nullable=False)
+    full_checksum = Column(Boolean, nullable=False)
     harness_returncode = Column(Integer, default=None)
     snapshot_location = Column(String)
 

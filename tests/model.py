@@ -116,7 +116,7 @@ class TestModel(unittest.TestCase):
 
         backup1_client1 = Backup()
         backup1_client1.generation = 'daily'
-        backup1_client1.was_checksum_run = False
+        backup1_client1.full_checksum = False
         backup1_client1.host = client1
         backup1_client1.storage = client1.backup_server.storage[0]
         backup1_client1.start_time = datetime.datetime(
@@ -130,7 +130,7 @@ class TestModel(unittest.TestCase):
 
         backup2_client1 = Backup()
         backup2_client1.generation = 'daily'
-        backup2_client1.was_checksum_run = False
+        backup2_client1.full_checksum = False
         backup2_client1.host = client1
         backup2_client1.storage = client1.backup_server.storage[0]
         backup2_client1.start_time = datetime.datetime(
@@ -144,7 +144,7 @@ class TestModel(unittest.TestCase):
 
         backup1_client2 = Backup()
         backup1_client2.generation = 'daily'
-        backup1_client2.was_checksum_run = False
+        backup1_client2.full_checksum = False
         backup1_client2.host = client2
         backup1_client2.storage = client2.backup_server.storage[0]
         backup1_client2.start_time = datetime.datetime(
@@ -158,7 +158,7 @@ class TestModel(unittest.TestCase):
 
         backup2_client2 = Backup()
         backup2_client2.generation = 'weekly'
-        backup2_client2.was_checksum_run = False
+        backup2_client2.full_checksum = False
         backup2_client2.host = client2
         backup2_client2.storage = client2.backup_server.storage[0]
         backup2_client2.start_time = datetime.datetime(
@@ -268,7 +268,7 @@ class TestModel(unittest.TestCase):
         with self.assertRaises(IntegrityError):
             backup1_client1 = Backup()
             backup1_client1.host = client1
-            backup1_client1.was_checksum_run = True
+            backup1_client1.full_checksum = True
             backup1_client1.generation = 'hourly'
             backup1_client1.storage = client1.backup_server.storage[0]
             backup1_client1.start_time = datetime.datetime(
@@ -276,7 +276,7 @@ class TestModel(unittest.TestCase):
             backup1_client1.end_time = datetime.datetime(
                     2012, 01, 03, 00, 07, 32)
             backup1_client1.successful = True
-            backup1_client1.was_checksum_run = False
+            backup1_client1.full_checksum = False
             backup1_client1.harness_returncode = 0
             backup1_client1.snapshot_location = (
                     '/backups/client1.example.net@2012-01-03_000000')
@@ -464,7 +464,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'monthly'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -480,7 +480,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'weekly'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -496,7 +496,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'daily'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -542,7 +542,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'monthly'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -558,7 +558,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'weekly'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -574,7 +574,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'daily'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -620,7 +620,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'monthly'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -636,7 +636,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'weekly'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -652,7 +652,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'daily'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -698,7 +698,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'monthly'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -714,7 +714,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'weekly'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -730,7 +730,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'daily'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         backup.storage = client1.backup_server.storage[0]
         backup.start_time = datetime.datetime.now()
@@ -763,7 +763,7 @@ class TestModel(unittest.TestCase):
             for i in range(10):
                 backup = Backup()
                 backup.generation = 'monthly'
-                backup.was_checksum_run = False
+                backup.full_checksum = False
                 backup.host = client1
                 if with_known_pid:
                     backup.backup_pid = os.getpid()
@@ -813,7 +813,7 @@ class TestModel(unittest.TestCase):
 
         backup = Backup()
         backup.generation = 'monthly'
-        backup.was_checksum_run = False
+        backup.full_checksum = False
         backup.host = client1
         db.add(backup)
         db.commit()
