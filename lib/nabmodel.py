@@ -175,11 +175,26 @@ class Host(Base):
     backup_server = relationship(BackupServer, order_by=id,
             backref='hosts')
     hostname = Column(String, nullable=False, unique=True)
-    ip_address = Column(String, default=None)
+    ip_address = Column(String)
     active = Column(Boolean, default=True)
-    next_backup = Column(DateTime, default=None)
-    window_start = Column(Time, default=None)
-    window_end = Column(Time, default=None)
+    next_backup = Column(DateTime)
+    window_start = Column(Time)
+    window_end = Column(Time)
+    last_rsync_checksum = Column(DateTime)
+
+    def ready_for_checksum(self, db):
+        '''Is it time for a full checksum run?
+
+        :rtype: Boolean, True means a backup with checksum should be run.
+        '''
+        frequency = self.merged_configs(db).rsync_checksum_frequency
+        if frequency == None:
+            return False
+
+        if self.last_rsync_checksum == None:
+            return True
+
+        return self.last_rsync_checksum + frequency < datetime.datetime.now()
 
     def are_backups_currently_running(self, db):
         '''Are there any backups currently running for this host?

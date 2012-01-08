@@ -798,4 +798,43 @@ class TestModel(unittest.TestCase):
         self.assertEqual(len(client1.backups_with_pids()), 1)
         self.assertEqual(client1.are_backups_currently_running(db), True)
 
+    def test_BackupsWithPids(self):
+        '''Test finding backups that have PIDs and clearing them.
+        '''
+
+        #  load the database with the schema test
+        self.test_SchemaBasic()
+
+        db = nabdb.session()
+
+        client1 = db.query(Host).filter_by(hostname='client1.example.com'
+                ).first()
+        config = client1.configs[0]
+
+        backup = Backup()
+        backup.generation = 'monthly'
+        backup.was_checksum_run = False
+        backup.host = client1
+        db.add(backup)
+        db.commit()
+
+        self.assertEqual(client1.ready_for_checksum(db), False)
+
+        config.rsync_checksum_frequency = datetime.timedelta(days=30)
+        db.flush()
+        db.commit()
+        self.assertEqual(client1.ready_for_checksum(db), True)
+
+        client1.last_rsync_checksum = (datetime.datetime.now()
+                - datetime.timedelta(days=31))
+        db.flush()
+        db.commit()
+        self.assertEqual(client1.ready_for_checksum(db), True)
+
+        client1.last_rsync_checksum = (datetime.datetime.now()
+                - datetime.timedelta(days=29))
+        db.flush()
+        db.commit()
+        self.assertEqual(client1.ready_for_checksum(db), False)
+
 print unittest.main()
