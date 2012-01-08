@@ -759,7 +759,7 @@ class TestModel(unittest.TestCase):
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
 
-        def add_more_backups(db, with_known_pid = False):
+        def add_more_backups(db, with_known_pid=False):
             for i in range(10):
                 backup = Backup()
                 backup.generation = 'monthly'
