@@ -330,6 +330,11 @@ class TestModel(unittest.TestCase):
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
 
+        self.assertEqual(client1.merged_configs(db).monthly_history, None)
+        client1.configs[0].monthly_history = 3
+        db.commit()
+        self.assertEqual(client1.merged_configs(db).monthly_history, 3)
+
         #  delete the old configs
         db.delete(client1.configs[0])
         db.flush()
@@ -660,5 +665,51 @@ class TestModel(unittest.TestCase):
         db.flush()
         db.commit()
         self.assertEqual(client1.ready_for_checksum(db), False)
+
+    def test_FilterRules(self):
+        '''Test filter rules code and model.
+        '''
+
+        #  load the database with the schema test
+        self.test_SchemaBasic()
+
+        db = nabdb.session()
+
+        client1 = db.query(Host).filter_by(hostname='client1.example.com'
+                ).first()
+        config = client1.configs[0]
+        config.use_global_filters = False
+        db.flush()
+        db.commit()
+
+        default = HostConfig()
+        db.add(default)
+
+        def add_rule(db, client, priority, exclude):
+            rule = FilterRule()
+            rule.host = client
+            rule.rsync_rule = exclude
+            rule.priority = priority
+            db.add(rule)
+        add_rule(db, client1, '5', 'exclude /local/rule5')
+        add_rule(db, client1, '6', 'exclude /local/rule6')
+        add_rule(db, client1, '55', 'exclude /local/rule55')
+        add_rule(db, None, '55', 'exclude /global/rule55')
+        add_rule(db, None, '55', 'exclude /post/global/rule55')
+        add_rule(db, None, '1', 'exclude /global/rule1')
+        db.commit()
+
+        self.assertEqual(client1.get_filter_rules(db),
+                'exclude /local/rule5\nexclude /local/rule55\n'
+                'exclude /local/rule6\n')
+
+        config.use_global_filters = True
+        db.flush()
+        db.commit()
+
+        self.assertEqual(client1.get_filter_rules(db),
+                'exclude /global/rule1\nexclude /local/rule5\n'
+                'exclude /global/rule55\nexclude /local/rule55\n'
+                'exclude /post/global/rule55\nexclude /local/rule6\n')
 
 print unittest.main()

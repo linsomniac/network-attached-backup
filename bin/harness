@@ -36,5 +36,7 @@ def run_backup_for_host(hostname):
     db.add(backup)
     db.commit()
 
+    rsync_filter_rules = host.get_filter_rules(db)
+
 ################################
 run_backup_for_host(sys.argv[1])

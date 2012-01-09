@@ -12,6 +12,7 @@ from sqlalchemy import BigInteger, SmallInteger
 from sqlalchemy import Interval, CheckConstraint, Boolean, DateTime, Time, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 import datetime
 import nabsupp
 
@@ -181,6 +182,24 @@ class Host(Base):
     window_start = Column(Time)
     window_end = Column(Time)
     last_rsync_checksum = Column(DateTime)
+
+    def get_filter_rules(self, db):
+        '''Return a string containing the rsync rules for this host.
+
+        :rtype: str with embedded newlines, one rsync rule per line.
+        '''
+        if self.merged_configs(db).use_global_filters:
+            args = [or_(FilterRule.host_id == self.id,
+                    FilterRule.host_id == None)]
+        else:
+            args = [FilterRule.host_id == self.id]
+
+        rules = ''
+        for rule in db.query(FilterRule).filter(*args).order_by(
+                FilterRule.priority, FilterRule.rsync_rule):
+            rules += '%s\n' % rule.rsync_rule
+
+        return rules
 
     def ready_for_checksum(self, db):
         '''Is it time for a full checksum run?
