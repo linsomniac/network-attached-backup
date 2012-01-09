@@ -419,6 +419,19 @@ class TestModel(unittest.TestCase):
         db.commit()
         self.assertEqual(client1.merged_configs(db).rsync_do_compress, True)
 
+    def add_generation_backups(self, db, client1, generation):
+        '''Helper for testing with FindBackupGeneration*'''
+        backup = Backup(client1, generation, full_checksum=False)
+        backup.storage = client1.backup_server.storage[0]
+        backup.start_time = datetime.datetime.now()
+        backup.end_time = datetime.datetime.now()
+        backup.successful = True
+        backup.harness_returncode = 0
+        backup.snapshot_location = (
+                '/backups/client1.example.net@2012-01-01_000100')
+        db.add(backup)
+        db.commit()
+
     def test_FindBackupGeneration(self):
         '''Test the code that finds the next generation of backup to run.'''
 
@@ -446,44 +459,11 @@ class TestModel(unittest.TestCase):
         db.commit()
 
         self.assertEqual(client1.find_backup_generation(db), 'monthly')
-
-        backup = Backup(client1, 'monthly', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'monthly')
         self.assertEqual(client1.find_backup_generation(db), 'weekly')
-
-        backup = Backup(client1, 'weekly', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'weekly')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
-
-        backup = Backup(client1, 'daily', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'daily')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
     def test_FindBackupGenerationNoMonthly(self):
@@ -515,45 +495,11 @@ class TestModel(unittest.TestCase):
         db.commit()
 
         self.assertEqual(client1.find_backup_generation(db), 'weekly')
-
-        backup = Backup(client1, 'monthly', full_checksum=False)
-        backup.host = client1
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'monthly')
         self.assertEqual(client1.find_backup_generation(db), 'weekly')
-
-        backup = Backup(client1, 'weekly', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'weekly')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
-
-        backup = Backup(client1, 'daily', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'daily')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
     def test_FindBackupGenerationNoWeeklyOrMonthly(self):
@@ -585,44 +531,11 @@ class TestModel(unittest.TestCase):
         db.commit()
 
         self.assertEqual(client1.find_backup_generation(db), 'daily')
-
-        backup = Backup(client1, 'monthly', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'monthly')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
-
-        backup = Backup(client1, 'weekly', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'weekly')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
-
-        backup = Backup(client1, 'daily', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'daily')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
     def test_FindBackupGenerationNoWeekly(self):
@@ -654,44 +567,11 @@ class TestModel(unittest.TestCase):
         db.commit()
 
         self.assertEqual(client1.find_backup_generation(db), 'monthly')
-
-        backup = Backup(client1, 'monthly', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'monthly')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
-
-        backup = Backup(client1, 'weekly', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'weekly')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
-
-        backup = Backup(client1, 'daily', full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
-        backup.start_time = datetime.datetime.now()
-        backup.end_time = datetime.datetime.now()
-        backup.successful = True
-        backup.harness_returncode = 0
-        backup.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000100')
-        db.add(backup)
-        db.commit()
-
+        self.add_generation_backups(db, client1, 'daily')
         self.assertEqual(client1.find_backup_generation(db), 'daily')
 
     def test_BackupsWithPids(self):
