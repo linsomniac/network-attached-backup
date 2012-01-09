@@ -4,3 +4,5 @@
 #  All Rights Reserved.
 
 
+class Storage:
+    pass
