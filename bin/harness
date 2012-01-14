@@ -9,6 +9,7 @@ of a Host() which is to be backed up.
 '''
 
 import os
+import time
 import sys
 sys.path.append('lib')              # ZFSBACKUPLIBDIR
 
