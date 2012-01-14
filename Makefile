@@ -1,5 +1,5 @@
 check:
-	python tests/model.py
+	bash -c 'cd tests && exec make'
 	pep8 --show-source lib/*.py lib/nabstorageplugins/*.py tests/*.py \
 		bin/harness
 
