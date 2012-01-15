@@ -9,7 +9,9 @@ of a Host() which is to be backed up.
 '''
 
 import os
-import time
+import subprocess
+import datetime
+import StringIO
 import sys
 sys.path.append('lib')              # ZFSBACKUPLIBDIR
 
@@ -20,6 +22,9 @@ db = nabdb.session()
 
 def run_backup_for_host(hostname):
     host = db.query(Host).filter_by(hostname=hostname).first()
+    extra_rsync_arguments = []
+    if host.merged_configs(db).rsync_compression:
+        extra_rsync_arguments.append('-z')
 
     if nabsupp.are_backups_currently_running(db, host):
         sys.stderr.write('ERROR: Backups are already running.  Aborting.\n')
@@ -37,7 +42,88 @@ def run_backup_for_host(hostname):
     db.add(backup)
     db.commit()
 
-    rsync_filter_rules = host.get_filter_rules(db)
+    import nabstorageplugins
+    storage_plugin = getattr(nabstorageplugins, host.storage.method)
+    storage = storage_plugin.Storage([
+                host.storage.arg1,
+                host.storage.arg2,
+                host.storage.arg3,
+                host.storage.arg4,
+                host.storage.arg5,
+            ])
+    if storage.rsync_inplace_compatible():
+        extra_rsync_arguments.append('--inplace')
+    backup.snapshot_name = storage.snapshot_name(host, backup)
+
+    os.chdir(storage.get_backup_top_directory(host.hostname))
+    subprocess.check_call(['rm', '-rf', 'logs'])
+    os.mkdir('logs')
+
+    with open(os.path.join('logs', 'status.out'), 'w') as fp:
+        sys.stdout = fp
+        sys.stderr = fp
+
+        os.chdir('data')
+
+        if backup.full_checksum:
+            print '*** DOING FULL CHECKSUM RUN ***'
+            print
+            extra_rsync_arguments.append('--ignore-times')
+            backup.full_checksum = True
+
+        rsync_filter_rules_fp = StringIO.StringIO(host.get_filter_rules(db))
+
+        print 'Backing up host %s' % host.hostname
+        start_time = datetime.now()
+        backup.start_time = start_time
+        print 'Starting rsync on %s' % (
+                start_time.strftime('%a %b %d, %Y at %H:%M:%S'))
+
+        backup.backup_pid = os.getpid()
+
+        db.commit()
+
+        with open(os.path.join('logs', 'rsync.out'), 'w') as rsync_fp:
+            backup.harness_returncode = subprocess.call([
+                    'rsync',
+                    '-av',
+                    '-e', 'ssh -i %s'
+                        % os.path.join('..', 'keys', 'backup-identity'),
+                    '--delete', '--delete-excluded',
+                    '--filter=-',
+                    '--ignore-errors',
+                    '--hard-links',
+                    '--itemize-changes',
+                    '--timeout=3600',
+                    '--numeric-ids',
+                    ] + extra_rsync_arguments + [
+                    'root@%s:/' % host.hostname,
+                    '.'
+                    ],
+                    stdin=rsync_filter_rules_fp,
+                    stdout=rsync_fp, stderr=rsync_fp)
+        end_time = datetime.now()
+
+        backup.end_time = end_time
+        backup.successful = backup.harness_returncode in [0, 23, 24]
+        db.commit()
+
+        print 'RSYNC_RETURNCODE=%s' % backup.harness_returncode
+        print 'Completed rsync on %s' % (
+                end_time.strftime('%a %b %d, %Y at %H:%M:%S'))
+
+        start_time = datetime.now()
+        print
+        print 'Starting snapshot on %s' % (
+                starttime.strftime('%a %b %d, %Y at %H:%M:%S'))
+
+        storage.create_snapshot(self, host.hostname, backup.snapshot_name)
+
+        end_time = datetime.now()
+        print 'Completed snapshot on %s' % (
+                end_time.strftime('%a %b %d, %Y at %H:%M:%S'))
 
 ################################
+nabsupp.setup_syslog()
+nabsupp.log_exceptions()
 run_backup_for_host(sys.argv[1])

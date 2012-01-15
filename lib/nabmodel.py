@@ -328,7 +328,7 @@ class HostConfig(Base):
 
     .. py:attribute:: rsync_compression
 
-    If true, compress the rsync stream.  This should only be used for remote
+    If True, compress the rsync stream.  This should only be used for remote
     machines, it will dramatically slow down backups over a LAN.
     '''
 
@@ -346,7 +346,7 @@ class HostConfig(Base):
     monthly_history = Column(Integer)
     priority = Column(Integer)
     rsync_checksum_frequency = Column(Interval)
-    rsync_do_compress = Column(Boolean)
+    rsync_compression = Column(Boolean)
 
     def get_hostname(self):
         '''Return the hostname or "<GLOBAL>" for the global config.'''
@@ -368,7 +368,7 @@ class HostConfig(Base):
                 'monthly_history',
                 'priority',
                 'rsync_checksum_frequency',
-                'rsync_do_compress',
+                'rsync_compression',
                 ):
             s += '%s=%s ' % (attr, getattr(self, attr))
         return s
@@ -418,15 +418,15 @@ class Backup(Base):
 
     .. py:attribute:: full_checksum
 
-    Trus if this backup did a full checksum run.
+    True if this backup did a full checksum run.
 
     .. py:attribute:: harness_returncode
 
     Return-code from the harness (which runs the rsync) process.
 
-    .. py:attribute:: snapshot_location
+    .. py:attribute:: snapshot_name
 
-    Storage-specific location of the backup snapshot.
+    Storage-specific name of the backup snapshot.
     '''
 
     __tablename__ = 'backups'
@@ -445,7 +445,7 @@ class Backup(Base):
     successful = Column(Boolean, default=None)
     full_checksum = Column(Boolean, nullable=False)
     harness_returncode = Column(Integer, default=None)
-    snapshot_location = Column(String)
+    snapshot_name = Column(String)
 
     def __init__(self, host, generation, full_checksum):
         self.generation = generation

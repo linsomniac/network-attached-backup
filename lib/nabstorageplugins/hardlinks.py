@@ -64,6 +64,19 @@ class Storage:
         os.rename(topdir, remove)
         subprocess.call(['rm', '-rf', remove])
 
+    def snapshot_name(self, host, backup):
+        '''Return the name to use for the snapshot.
+
+        :param Host host: Host of the backup.
+
+        :param Backup backup: Backup being run.
+
+        :rtype: str
+        '''
+        import datetime
+        return datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S'
+                ) + backup.generation
+
     def create_snapshot(self, hostname, snapshotname):
         '''Create a snapshot of the last backup.
 

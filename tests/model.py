@@ -346,7 +346,7 @@ class TestModel(unittest.TestCase):
         config_default.alerts_mail_address = 'sysadmin@example.com'
         config_default.failure_warn_after = datetime.timedelta(days=3)
         config_default.rsync_checksum_frequency = datetime.timedelta(days=30)
-        config_default.rsync_do_compress = False
+        config_default.rsync_compression = False
         config_default.use_global_filters = True
         config_default.priority = 4
         config_default.check_connectivity = False
@@ -419,10 +419,10 @@ class TestModel(unittest.TestCase):
                 str(client1.merged_configs(db).rsync_checksum_frequency),
                 '29 days, 0:00:00')
 
-        self.assertEqual(client1.merged_configs(db).rsync_do_compress, False)
-        config_client1.rsync_do_compress = True
+        self.assertEqual(client1.merged_configs(db).rsync_compression, False)
+        config_client1.rsync_compression = True
         db.commit()
-        self.assertEqual(client1.merged_configs(db).rsync_do_compress, True)
+        self.assertEqual(client1.merged_configs(db).rsync_compression, True)
 
     def add_generation_backups(self, db, client1, generation):
         '''Helper for testing with FindBackupGeneration*'''
