@@ -1,5 +1,2 @@
-Re-organize harness.
-Make harness so that it can be tested.
-Write tests for harness.
 Re-organize storage objects to they can take database objects rather than
       hostname/snapshotname?  Do they also need to take "db" then?

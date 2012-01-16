@@ -8,6 +8,8 @@
 from nabdb import *
 import os
 import sys
+import subprocess
+import datetime
 
 
 def clear_stale_backup_pids(db, host=None):
@@ -86,3 +88,134 @@ def log_exceptions(syslog=True, stderr=True, filename=None):
 
     sys.excepthook = ExceptHook(useSyslog=syslog, useStderr=stderr,
             filename=filename)
+
+
+def run_backup_for_host(db, hostname):
+    '''Code for performing the backup.  Returns True if the backup completed
+    (successful or not).
+
+    :param DatabaseHandle db: Handle to the database.
+
+    :param str hostname: Name of the host to do the backup of.
+
+    :rtype: Boolean
+    '''
+    from nabmodel import Host, Backup
+    import tempfile
+
+    host = db.query(Host).filter_by(hostname=hostname).first()
+    extra_rsync_arguments = []
+    if host.merged_configs(db).rsync_compression:
+        extra_rsync_arguments.append('-z')
+
+    if host.are_backups_currently_running(db):
+        sys.stderr.write('ERROR: Backups are already running.  Aborting.\n')
+        return False
+
+    if not host.active:
+        sys.stderr.write('This host is not enabled for backups '
+                '(active=False)\n')
+        return False
+
+    backup = Backup(host, host.find_backup_generation(db),
+            full_checksum=host.ready_for_checksum(db))
+    backup.backup_pid = os.getpid()
+    db.add(backup)
+    db.commit()
+
+    import nabstorageplugins
+    storage_plugin = getattr(nabstorageplugins,
+            host.backup_server.storage[0].method)
+    storage = storage_plugin.Storage([
+                host.backup_server.storage[0].arg1,
+                host.backup_server.storage[0].arg2,
+                host.backup_server.storage[0].arg3,
+                host.backup_server.storage[0].arg4,
+                host.backup_server.storage[0].arg5,
+            ])
+    if storage.rsync_inplace_compatible():
+        extra_rsync_arguments.append('--inplace')
+    backup.snapshot_name = storage.snapshot_name(host, backup)
+
+    os.chdir(storage.get_backup_top_directory(host.hostname))
+    subprocess.check_call(['rm', '-rf', 'logs'])
+    os.mkdir('logs')
+
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    with open(os.path.join('logs', 'status.out'), 'w') as fp:
+        sys.stdout = fp
+        sys.stderr = fp
+
+        os.chdir('data')
+
+        if backup.full_checksum:
+            print '*** DOING FULL CHECKSUM RUN ***'
+            print
+            extra_rsync_arguments.append('--ignore-times')
+            backup.full_checksum = True
+
+        rules_tmp = tempfile.mkstemp()
+        with open(rules_tmp[1], 'w') as rules_fp:
+            rules_fp.write(host.get_filter_rules(db))
+        print repr(host.get_filter_rules(db))
+        rules_fp = open(rules_tmp[1], 'r')
+        os.unlink(rules_tmp[1])
+
+        print 'Backing up host %s' % host.hostname
+        start_time = datetime.datetime.now()
+        backup.start_time = start_time
+        print 'Starting rsync on %s' % (
+                start_time.strftime('%a %b %d, %Y at %H:%M:%S'))
+
+        backup.backup_pid = os.getpid()
+
+        db.commit()
+
+        with open(os.path.join('..', 'logs', 'rsync.out'), 'w') as rsync_fp:
+            backup.harness_returncode = subprocess.call([
+                    'rsync',
+                    '-av',
+                    '-e', 'ssh -i %s'
+                        % os.path.join('..', 'keys', 'backup-identity'),
+                    '--delete', '--delete-excluded',
+                    '--filter=merge -',
+                    '--ignore-errors',
+                    '--hard-links',
+                    '--itemize-changes',
+                    '--timeout=3600',
+                    '--numeric-ids',
+                    ] + extra_rsync_arguments + [
+                    'root@%s:/' % host.hostname,
+                    '.'
+                    ],
+                    stdin=rules_fp,
+                    stdout=rsync_fp, stderr=rsync_fp)
+        end_time = datetime.datetime.now()
+        rsync_fp.close()
+
+        backup.successful = backup.harness_returncode in [0, 23, 24]
+        backup.backup_pid = None
+        db.commit()
+
+        print 'RSYNC_RETURNCODE=%s' % backup.harness_returncode
+        print 'Completed rsync on %s' % (
+                end_time.strftime('%a %b %d, %Y at %H:%M:%S'))
+
+        start_time = datetime.datetime.now()
+        print
+        print 'Starting snapshot on %s' % (
+                start_time.strftime('%a %b %d, %Y at %H:%M:%S'))
+
+        storage.create_snapshot(host.hostname, backup.snapshot_name)
+
+        end_time = datetime.datetime.now()
+        print 'Completed snapshot on %s' % (
+                end_time.strftime('%a %b %d, %Y at %H:%M:%S'))
+
+        backup.end_time = end_time
+        db.commit()
+
+    sys.stdout = old_stdout
+    sys.stderr = old_stderr
+    return True

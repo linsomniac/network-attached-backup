@@ -4,3 +4,6 @@
 #  All Rights Reserved.
 
 __all__ = ['zfs', 'hardlinks']
+
+import zfs
+import hardlinks

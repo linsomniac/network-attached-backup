@@ -75,7 +75,7 @@ class Storage:
         '''
         import datetime
         return datetime.datetime.now().strftime('%Y-%m-%d_%H%M%S'
-                ) + backup.generation
+                ) + '-' + backup.generation
 
     def create_snapshot(self, hostname, snapshotname):
         '''Create a snapshot of the last backup.
