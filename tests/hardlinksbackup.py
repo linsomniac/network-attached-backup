@@ -87,8 +87,11 @@ class TestHardlinksStorage(unittest.TestCase):
         db = self.create_database()
         host = db.query(Host).filter_by(hostname='localhost').first()
 
+        #  first backup
         nabsupp.run_backup_for_host(db, 'localhost')
         first_snapshotname = host.backups[0].snapshot_name
+        #  wait long enough that a new name snapshot will be made
+        time.sleep(1.1)
 
         filename = '/tmp/nabhardlinksbackuptest/root/testfile'
         with open(filename, 'r') as fp:
@@ -103,11 +106,9 @@ class TestHardlinksStorage(unittest.TestCase):
         with open('/tmp/nabhardlinksbackuptest/root/testfile', 'w') as fp:
             fp.write('This is another test')
 
+        #  second backup
         nabsupp.run_backup_for_host(db, 'localhost')
         second_snapshotname = host.backups[-1].snapshot_name
-
-        #  wait long enough that a new name snapshot will be made
-        time.sleep(2)
 
         filename = '/tmp/nabhardlinksbackuptest/root/testfile'
         with open(filename, 'r') as fp:

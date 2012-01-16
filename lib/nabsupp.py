@@ -172,12 +172,20 @@ def run_backup_for_host(db, hostname):
 
         db.commit()
 
+        #  do not run remote rsync if hostname is 'localhost'
+        #  mostly used for tests
+        remote_part = ['-e', 'ssh -i %s'
+                % os.path.join('..', 'keys', 'backup-identity')]
+        source = 'root@%s:/' % host.hostname
+        if host.hostname == 'localhost':
+            remote_part = []
+            source = '/'
+
         with open(os.path.join('..', 'logs', 'rsync.out'), 'w') as rsync_fp:
             backup.harness_returncode = subprocess.call([
                     'rsync',
                     '-av',
-                    '-e', 'ssh -i %s'
-                        % os.path.join('..', 'keys', 'backup-identity'),
+                    ] + remote_part + [
                     '--delete', '--delete-excluded',
                     '--filter=merge -',
                     '--ignore-errors',
@@ -186,7 +194,7 @@ def run_backup_for_host(db, hostname):
                     '--timeout=3600',
                     '--numeric-ids',
                     ] + extra_rsync_arguments + [
-                    'root@%s:/' % host.hostname,
+                    source,
                     '.'
                     ],
                     stdin=rules_fp,
