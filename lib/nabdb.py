@@ -55,7 +55,9 @@ class DbWrapper:
         :param list path_list: (Default None)  A list of file names to check
         for the database connect string.  If `path_list` is `None`, then a
         standard list of paths is used.  If NAB_DBCREDENTIALS environment
-        variable is set, that is used for the credentials file.
+        variable is set, that is used for the credentials file.  If
+        NAB_DBCREDENTIALSTR is set, that string is used to connect to the
+        database.
 
         The `path_list` is walked, stopping when the listed file exists,
         and that is loaded as Python code.  Any files after the first
@@ -82,6 +84,9 @@ class DbWrapper:
                         'dbcredentials',
                         ]
 
+        if not connect and os.environ.get('NAB_DBCREDENTIALSTR'):
+            connect = os.environ.get('NAB_DBCREDENTIALSTR')
+
         if connect == None:
             namespace = {}
             for path in path_list:
@@ -92,6 +97,7 @@ class DbWrapper:
             else:
                 sys.stderr.write('ERROR: Unable to find "dbcredentials" '
                         'file.\n')
+                sys.stderr.write('Tried: "%s"\n' % repr(path_list))
                 sys.exit(1)
             if not 'connect' in namespace:
                 sys.stderr.write('ERROR: Could not find "connect" value in '
