@@ -16,6 +16,164 @@ import datetime
 from nabdb import *
 
 
+def schema_basic(db):
+    metadata = Metadata()
+    db.add(metadata)
+    db.commit()
+
+    server = BackupServer()
+    server.hostname = 'server.example.com'
+    db.add(server)
+
+    zfs_storage = Storage()
+    zfs_storage.backup_server = server
+    zfs_storage.method = 'zfs'
+    zfs_storage.arg1 = 'backups'
+    zfs_storage.arg2 = 'backups'
+    zfs_storage.arg3 = '/backups'
+    db.add(zfs_storage)
+
+    client1 = Host()
+    client1.backup_server = server
+    client1.hostname = 'client1.example.com'
+    client1.window_start = datetime.time(0, 0)
+    client1.window_end = datetime.time(5, 0)
+    db.add(client1)
+
+    client2 = Host()
+    client2.backup_server = server
+    client2.hostname = 'client2.example.com'
+    client2.window_start = datetime.time(0, 0)
+    client2.window_end = datetime.time(5, 0)
+    db.add(client1)
+
+    config_default = HostConfig()
+    config_default.alerts_mail_address = 'sysadmin@example.com'
+    config_default.failure_warn_after = datetime.timedelta(days=3)
+    config_default.use_global_filters = True
+    db.add(config_default)
+
+    config_client1 = HostConfig()
+    config_client1.host = client1
+    config_client1.priority = 4
+    db.add(config_client1)
+
+    config_client2 = HostConfig()
+    config_client2.host = client2
+    config_client2.use_global_filters = False
+    db.add(config_client2)
+
+    db.commit()
+
+
+def schema_additional(db):
+    schema_basic(db)
+
+    client1 = db.query(Host).filter_by(hostname='client1.example.com'
+            ).first()
+    client2 = db.query(Host).filter_by(hostname='client2.example.com'
+            ).first()
+    zfs_storage = db.query(Storage).first()
+
+    backup1_client1 = Backup(client1, 'daily', full_checksum=False)
+    backup1_client1.storage = client1.backup_server.storage[0]
+    backup1_client1.start_time = datetime.datetime(
+            2012, 01, 02, 00, 00, 00)
+    backup1_client1.end_time = datetime.datetime(2012, 01, 02, 00, 07, 32)
+    backup1_client1.successful = True
+    backup1_client1.harness_returncode = 0
+    backup1_client1.snapshot_location = (
+            '/backups/client1.example.net@2012-01-02_000000')
+    db.add(backup1_client1)
+
+    backup2_client1 = Backup(client1, 'daily', full_checksum=False)
+    backup2_client1.storage = client1.backup_server.storage[0]
+    backup2_client1.start_time = datetime.datetime(
+            2012, 01, 01, 00, 00, 01)
+    backup2_client1.end_time = datetime.datetime(2012, 01, 01, 00, 8, 11)
+    backup2_client1.successful = False
+    backup2_client1.harness_returncode = 1
+    backup2_client1.snapshot_location = (
+            '/backups/client1.example.net@2012-01-01_000001')
+    db.add(backup2_client1)
+
+    backup1_client2 = Backup(client2, 'daily', full_checksum=False)
+    backup1_client2.storage = client2.backup_server.storage[0]
+    backup1_client2.start_time = datetime.datetime(
+            2012, 01, 02, 00, 00, 00)
+    backup1_client2.end_time = datetime.datetime(2012, 01, 02, 00, 07, 32)
+    backup1_client2.successful = True
+    backup1_client2.harness_returncode = 0
+    backup1_client2.snapshot_location = (
+            '/backups/client2.example.net@2012-01-02_000000')
+    db.add(backup1_client2)
+
+    backup2_client2 = Backup(client2, 'weekly', full_checksum=False)
+    backup2_client2.storage = client2.backup_server.storage[0]
+    backup2_client2.start_time = datetime.datetime(
+            2012, 01, 01, 00, 01, 00)
+    backup2_client2.end_time = datetime.datetime(2012, 01, 01, 00, 07, 32)
+    backup2_client2.successful = True
+    backup2_client2.harness_returncode = 0
+    backup2_client2.snapshot_location = (
+            '/backups/client2.example.net@2012-01-01_000100')
+    db.add(backup2_client2)
+
+    filter1_global = FilterRule()
+    filter1_global.rsync_rule = 'exclude /tmp/'
+    db.add(filter1_global)
+
+    filter2_global = FilterRule()
+    filter2_global.rsync_rule = 'exclude /var/log/'
+    db.add(filter2_global)
+
+    filter3_global = FilterRule()
+    filter3_global.rsync_rule = 'exclude /home/*/.cache/'
+    db.add(filter3_global)
+
+    filter1_client1 = FilterRule()
+    filter1_client1.host = client1
+    filter1_client1.rsync_rule = 'exclude /dev/shm/'
+    filter1_client1.priority = '4'
+    db.add(filter1_client1)
+
+    filter1_client1 = FilterRule()
+    filter1_client1.host = client1
+    filter1_client1.rsync_rule = 'exclude /proc/'
+    filter1_client1.priority = '42'
+    db.add(filter1_client1)
+
+    usage_client1 = HostUsage()
+    usage_client1.host = client1
+    usage_client1.sample_date = datetime.date(2012, 1, 1)
+    usage_client1.used_by_dataset = 100000
+    usage_client1.used_by_snapshots = 200000
+    usage_client1.compression_ratio_percent = 100
+    usage_client1.runtime = datetime.timedelta(minutes=8, seconds=10)
+    db.add(usage_client1)
+
+    usage_client2 = HostUsage()
+    usage_client2.host = client2
+    usage_client2.sample_date = datetime.date(2012, 1, 1)
+    usage_client2.used_by_dataset = 500000
+    usage_client2.used_by_snapshots = 200000
+    usage_client2.compression_ratio_percent = 100
+    usage_client2.runtime = datetime.timedelta(minutes=6, seconds=32)
+    db.add(usage_client2)
+
+    usage_server = StorageUsage()
+    usage_server.storage = zfs_storage
+    usage_server.sample_date = datetime.date(2012, 1, 1)
+    usage_server.total_bytes = 100000000
+    usage_server.free_bytes = 90000000
+    usage_server.used_bytes = 10000000
+    usage_server.usage_percent = 10
+    usage_server.dedup_ratio_percent = 100
+    db.add(usage_server)
+
+    db.commit()
+
+
 class TestModel(unittest.TestCase):
 
     @classmethod
@@ -53,172 +211,22 @@ class TestModel(unittest.TestCase):
         '''Test the schema by loading data into it.'''
         db = nabdb.session()
 
-        metadata = Metadata()
-        db.add(metadata)
-        db.commit()
-
-        server = BackupServer()
-        server.hostname = 'server.example.com'
-        db.add(server)
-
-        zfs_storage = Storage()
-        zfs_storage.backup_server = server
-        zfs_storage.method = 'zfs'
-        zfs_storage.arg1 = 'backups'
-        zfs_storage.arg2 = 'backups'
-        zfs_storage.arg3 = '/backups'
-        db.add(zfs_storage)
-
-        client1 = Host()
-        client1.backup_server = server
-        client1.hostname = 'client1.example.com'
-        client1.window_start = datetime.time(0, 0)
-        client1.window_end = datetime.time(5, 0)
-        db.add(client1)
-
-        client2 = Host()
-        client2.backup_server = server
-        client2.hostname = 'client2.example.com'
-        client2.window_start = datetime.time(0, 0)
-        client2.window_end = datetime.time(5, 0)
-        db.add(client1)
-
-        config_default = HostConfig()
-        config_default.alerts_mail_address = 'sysadmin@example.com'
-        config_default.failure_warn_after = datetime.timedelta(days=3)
-        config_default.use_global_filters = True
-        db.add(config_default)
-
-        config_client1 = HostConfig()
-        config_client1.host = client1
-        config_client1.priority = 4
-        db.add(config_client1)
-
-        config_client2 = HostConfig()
-        config_client2.host = client2
-        config_client2.use_global_filters = False
-        db.add(config_client2)
-
-        db.commit()
+        schema_basic(db)
 
     def test_SchemaAdditional(self):
         '''Additional schema resources for testing.
         This schema produces additional resources, but it may conflict with
         testing of things beyond the basic schema.'''
-        self.test_SchemaBasic()
         db = nabdb.session()
-
-        client1 = db.query(Host).filter_by(hostname='client1.example.com'
-                ).first()
-        client2 = db.query(Host).filter_by(hostname='client2.example.com'
-                ).first()
-        zfs_storage = db.query(Storage).first()
-
-        backup1_client1 = Backup(client1, 'daily', full_checksum=False)
-        backup1_client1.storage = client1.backup_server.storage[0]
-        backup1_client1.start_time = datetime.datetime(
-                2012, 01, 02, 00, 00, 00)
-        backup1_client1.end_time = datetime.datetime(2012, 01, 02, 00, 07, 32)
-        backup1_client1.successful = True
-        backup1_client1.harness_returncode = 0
-        backup1_client1.snapshot_location = (
-                '/backups/client1.example.net@2012-01-02_000000')
-        db.add(backup1_client1)
-
-        backup2_client1 = Backup(client1, 'daily', full_checksum=False)
-        backup2_client1.storage = client1.backup_server.storage[0]
-        backup2_client1.start_time = datetime.datetime(
-                2012, 01, 01, 00, 00, 01)
-        backup2_client1.end_time = datetime.datetime(2012, 01, 01, 00, 8, 11)
-        backup2_client1.successful = False
-        backup2_client1.harness_returncode = 1
-        backup2_client1.snapshot_location = (
-                '/backups/client1.example.net@2012-01-01_000001')
-        db.add(backup2_client1)
-
-        backup1_client2 = Backup(client2, 'daily', full_checksum=False)
-        backup1_client2.storage = client2.backup_server.storage[0]
-        backup1_client2.start_time = datetime.datetime(
-                2012, 01, 02, 00, 00, 00)
-        backup1_client2.end_time = datetime.datetime(2012, 01, 02, 00, 07, 32)
-        backup1_client2.successful = True
-        backup1_client2.harness_returncode = 0
-        backup1_client2.snapshot_location = (
-                '/backups/client2.example.net@2012-01-02_000000')
-        db.add(backup1_client2)
-
-        backup2_client2 = Backup(client2, 'weekly', full_checksum=False)
-        backup2_client2.storage = client2.backup_server.storage[0]
-        backup2_client2.start_time = datetime.datetime(
-                2012, 01, 01, 00, 01, 00)
-        backup2_client2.end_time = datetime.datetime(2012, 01, 01, 00, 07, 32)
-        backup2_client2.successful = True
-        backup2_client2.harness_returncode = 0
-        backup2_client2.snapshot_location = (
-                '/backups/client2.example.net@2012-01-01_000100')
-        db.add(backup2_client2)
-
-        filter1_global = FilterRule()
-        filter1_global.rsync_rule = 'exclude /tmp/'
-        db.add(filter1_global)
-
-        filter2_global = FilterRule()
-        filter2_global.rsync_rule = 'exclude /var/log/'
-        db.add(filter2_global)
-
-        filter3_global = FilterRule()
-        filter3_global.rsync_rule = 'exclude /home/*/.cache/'
-        db.add(filter3_global)
-
-        filter1_client1 = FilterRule()
-        filter1_client1.host = client1
-        filter1_client1.rsync_rule = 'exclude /dev/shm/'
-        filter1_client1.priority = '4'
-        db.add(filter1_client1)
-
-        filter1_client1 = FilterRule()
-        filter1_client1.host = client1
-        filter1_client1.rsync_rule = 'exclude /proc/'
-        filter1_client1.priority = '42'
-        db.add(filter1_client1)
-
-        usage_client1 = HostUsage()
-        usage_client1.host = client1
-        usage_client1.sample_date = datetime.date(2012, 1, 1)
-        usage_client1.used_by_dataset = 100000
-        usage_client1.used_by_snapshots = 200000
-        usage_client1.compression_ratio_percent = 100
-        usage_client1.runtime = datetime.timedelta(minutes=8, seconds=10)
-        db.add(usage_client1)
-
-        usage_client2 = HostUsage()
-        usage_client2.host = client2
-        usage_client2.sample_date = datetime.date(2012, 1, 1)
-        usage_client2.used_by_dataset = 500000
-        usage_client2.used_by_snapshots = 200000
-        usage_client2.compression_ratio_percent = 100
-        usage_client2.runtime = datetime.timedelta(minutes=6, seconds=32)
-        db.add(usage_client2)
-
-        usage_server = StorageUsage()
-        usage_server.storage = zfs_storage
-        usage_server.sample_date = datetime.date(2012, 1, 1)
-        usage_server.total_bytes = 100000000
-        usage_server.free_bytes = 90000000
-        usage_server.used_bytes = 10000000
-        usage_server.usage_percent = 10
-        usage_server.dedup_ratio_percent = 100
-        db.add(usage_server)
-
-        db.commit()
+        schema_additional(db)
 
     def test_BadSchema(self):
         '''Test for things that should fail in the schema.'''
 
-        #  load the database with the schema test
-        self.test_SchemaAdditional()
-
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_additional(db)
 
         #  duplicate server name
         with self.assertRaises(IntegrityError):
@@ -304,10 +312,10 @@ class TestModel(unittest.TestCase):
     def test_ObjectRepresentation(self):
         '''Verify that database objects can be formatted as strings.'''
 
-        #  load the database with the schema test
-        self.test_SchemaAdditional()
-
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_additional(db)
 
         repr(db.query(Host).first())
         repr(db.query(BackupServer).first())
@@ -322,10 +330,10 @@ class TestModel(unittest.TestCase):
     def test_MergedConfigs(self):
         '''Test the merging of global and host configurations.'''
 
-        #  load the database with the schema test
-        self.test_SchemaBasic()
-
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_basic(db)
 
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
@@ -440,10 +448,10 @@ class TestModel(unittest.TestCase):
     def test_FindBackupGeneration(self):
         '''Test the code that finds the next generation of backup to run.'''
 
-        #  load the database with the schema test
-        self.test_SchemaBasic()
-
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_basic(db)
 
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
@@ -476,10 +484,10 @@ class TestModel(unittest.TestCase):
         This test has the monthly backups disabled.
         '''
 
-        #  load the database with the schema test
-        self.test_SchemaBasic()
-
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_basic(db)
 
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
@@ -512,10 +520,10 @@ class TestModel(unittest.TestCase):
         This test has the monthly and weekly backups disabled.
         '''
 
-        #  load the database with the schema test
-        self.test_SchemaBasic()
-
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_basic(db)
 
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
@@ -548,10 +556,10 @@ class TestModel(unittest.TestCase):
         This test has the weekly backups disabled.
         '''
 
-        #  load the database with the schema test
-        self.test_SchemaBasic()
-
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_basic(db)
 
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
@@ -583,13 +591,13 @@ class TestModel(unittest.TestCase):
         '''Test finding backups that have PIDs and clearing them.
         '''
 
-        #  load the database with the schema test
-        self.test_SchemaBasic()
-
         import os
         import random
         import nabsupp
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_basic(db)
 
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
@@ -634,10 +642,10 @@ class TestModel(unittest.TestCase):
         '''Test finding backups that have PIDs and clearing them.
         '''
 
-        #  load the database with the schema test
-        self.test_SchemaBasic()
-
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_basic(db)
 
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
@@ -670,10 +678,10 @@ class TestModel(unittest.TestCase):
         '''Test filter rules code and model.
         '''
 
-        #  load the database with the schema test
-        self.test_SchemaBasic()
-
         db = nabdb.session()
+
+        #  load the database with the schema test
+        schema_basic(db)
 
         client1 = db.query(Host).filter_by(hostname='client1.example.com'
                 ).first()
@@ -712,4 +720,5 @@ class TestModel(unittest.TestCase):
                 'exclude /global/rule55\nexclude /local/rule55\n'
                 'exclude /post/global/rule55\nexclude /local/rule6\n')
 
-print unittest.main()
+if __name__ == '__main__':
+    print unittest.main()
