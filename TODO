@@ -1,2 +1,2 @@
-Re-organize storage objects to they can take database objects rather than
+Re-organize storage objects so they can take database objects rather than
       hostname/snapshotname?  Do they also need to take "db" then?
