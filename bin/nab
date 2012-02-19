@@ -24,6 +24,7 @@ def nabcmd_hosts():
     for host in db.query(Host):
         print host.hostname
 
+
 def nab_cli_main():
     commands = [x[7:] for x in globals().keys() if x.startswith('nabcmd_')]
 

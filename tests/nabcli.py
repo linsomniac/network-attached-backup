@@ -43,8 +43,15 @@ class TestNabCli(unittest.TestCase):
 
         with self.assertRaises(subprocess.CalledProcessError):
             subprocess.check_output([nabcmd])
-        subprocess.check_output([nabcmd, 'help'])
-        subprocess.check_call([nabcmd, 'hosts'])
+        self.assertIn('usage: nab', subprocess.check_output([nabcmd, 'help']))
+
+        with open('/dev/null', 'w') as devnull:
+            self.assertEqual(subprocess.check_call([nabcmd, 'hosts'],
+                    stdout=devnull), 0)
+        self.assertIn('client1.example.com',
+                subprocess.check_output([nabcmd, 'hosts']))
+        self.assertIn('client2.example.com',
+                subprocess.check_output([nabcmd, 'hosts']))
 
 
 print unittest.main()
