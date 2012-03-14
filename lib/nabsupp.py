@@ -227,3 +227,31 @@ def run_backup_for_host(db, hostname):
     sys.stdout = old_stdout
     sys.stderr = old_stderr
     return True
+
+
+def run_command(args):
+    '''Call the command and get the stdout and stderr.
+    This is like `subprocess.call()`, but it returns an object with the
+    output of stdout, stderr, and the process return-code.
+
+    .. py:attribute:: args
+
+    Command suitable to pass to `subprocess.call()`, typically a list of
+    the command and its arguments.
+
+    :rtype: Object Includes attributes "stdout", "stderr", and "exitcode".
+    '''
+    class Return:
+        def __init__(self, stdout, stderr, exitcode):
+            self.stdout = stdout
+            self.stderr = stderr
+            self.exitcode = exitcode
+
+    with os.tmpfile() as fpout:
+        with os.tmpfile() as fperr:
+            exitcode = subprocess.call(args, stdout=fpout, stderr=fperr)
+            fpout.seek(0)
+            stdout = fpout.read()
+            fperr.seek(0)
+            stderr = fperr.read()
+    return Return(stdout, stderr, exitcode)

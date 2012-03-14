@@ -1,2 +1,9 @@
 Re-organize storage objects so they can take database objects rather than
       hostname/snapshotname?  Do they also need to take "db" then?
+
+initdb test needs to detect if the initdb has worked, it currently does
+not.  This probably needs to be done by closing and re-opening the database
+connection.  I don't know if that's even possible with the current code.
+
+Tests for "nab newserver".
+

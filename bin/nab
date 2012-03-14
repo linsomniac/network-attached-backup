@@ -11,13 +11,14 @@ to get a list of commands.
 import os
 import sys
 sys.path.append('lib')              # ZFSBACKUPLIBDIR
-import argparse
+import optparse
+import subprocess
 
 import nabsupp
 from nabdb import *
 
 
-def nabcmd_hosts():
+def nabcmd_hosts(global_options, command, args):
     '''Show information about hosts.
     '''
     db = nabdb.session()
@@ -25,23 +26,114 @@ def nabcmd_hosts():
         print host.hostname
 
 
-def nab_cli_main():
+def nabcmd_initdb(global_options, command, args):
+    '''Initialize the database if it does not already exist.
+    '''
+    nabdb.connect()
+    nabdb.Base.metadata.create_all()
+
+
+def nabcmd_newserver(global_options, command, args):
+    '''Create the server record.
+    '''
+    parser = optparse.OptionParser(
+            usage='%prog [GLOBAL ARGS] newserver [ARGS] <HOSTNAME>')
+    parser.add_option('-s', '--scheduler-slots', dest='scheduler_slots',
+            help='Slots in the scheduler for simultaneous backups',
+            metavar='SLOTS', type="int")
+    parser.add_option('-y', '--ssh-supports-y', dest='ssh_supports_y',
+            help='Does the "ssh" command support the "-y" argument?  '
+                'The default is "auto" which will try to detect, otherwise '
+                'specify "yes" or "no".',
+            default='auto', metavar='SSH_SUPPORTS_Y')
+    (options, optargs) = parser.parse_args(args=args)
+
+    if len(optargs) != 1:
+        sys.stderr.write('ERROR: Hostname not specified on command-line.\n\n')
+        parser.print_usage()
+        sys.exit(1)
+
+    db = nabdb.session()
+    if len(list(db.query(BackupServer))) > 0:
+        sys.stderr.write('ERROR: There is already a backup server defined.\n')
+        sys.exit(1)
+
+    server = BackupServer()
+    server.hostname = optargs[0]
+
+    if options.ssh_supports_y == 'auto':
+        resp = nabsupp.run_command(['ssh', '-y'])
+        if 'illegal option' in resp.stdout:
+            server.ssh_supports_y = False
+        else:
+            server.ssh_supports_y = True
+    elif options.ssh_supports_y[0] == 'y':
+        server.ssh_supports_y = True
+    elif options.ssh_supports_y[0] == 'n':
+        server.ssh_supports_y = False
+    else:
+        sys.stderr.write('Error: Unknown value for "ssh_supports_y" option,\n'
+                '   expecting "yes", "no", or "auto"\n')
+        sys.exit(1)
+
+    db.add(server)
+    db.commit()
+
+
+def nabcmd_listservers(global_options, command, args):
+    '''List available servers.
+    '''
+    parser = optparse.OptionParser(
+            usage='%prog [GLOBAL ARGS] listservers [ARGS]')
+    (options, optargs) = parser.parse_args(args=args)
+
+    db = nabdb.session()
+    for host in db.query(BackupServer).order_by(BackupServer.hostname):
+        print host.hostname
+
+
+def print_command_help():
     commands = [x[7:] for x in globals().keys() if x.startswith('nabcmd_')]
 
-    if (len(sys.argv) < 2 or sys.argv[1] not in commands
-            or sys.argv[1] == 'help'):
-        print 'usage: %s <COMMAND> [ARGS]' % os.path.basename(sys.argv[0])
-        print
-        print 'Where <COMMAND> is one of the following:'
-        maxcmdlen = max([len(x) for x in commands])
-        for command in sorted(commands):
-            shorthelp = globals()['nabcmd_%s' % command].__doc__.split('\n')[0]
-            print '   %-*s  %s' % (maxcmdlen, command, shorthelp)
-        print
-        print 'Use "<COMMAND> help" for more information about that command.'
-        sys.exit(0 if len(sys.argv) > 1 and sys.argv[1] == 'help' else 1)
+    print
+    print 'Where <COMMAND> is one of the following:\n'
+    maxcmdlen = max([len(x) for x in commands])
+    for command in sorted(commands):
+        shorthelp = globals()['nabcmd_%s' % command].__doc__.split('\n')[0]
+        print '   %-*s  %s' % (maxcmdlen, command, shorthelp)
+    print
+    print 'Use "<COMMAND> --help" for more information about that command.'
 
-    globals()['nabcmd_%s' % sys.argv[1]]()
+
+def nab_cli_main():
+    '''Main part of the "nab" command-line program.'''
+
+    commands = [x[7:] for x in globals().keys() if x.startswith('nabcmd_')]
+
+    parser = optparse.OptionParser(add_help_option=False,
+            usage='%prog [GLOBAL ARGS] <COMMAND> [COMMAND ARGS]')
+    parser.disable_interspersed_args()
+    parser.add_option('--verbose', action='store_true', dest='verbose',
+            help='Display more information about the operation')
+    parser.add_option('--debug', action='store_true', dest='debug',
+            help='Display additional debugging information.')
+    (options, optargs) = parser.parse_args()
+
+    if len(optargs) < 1:
+        parser.print_help()
+        print_command_help()
+        sys.exit(1)
+    if optargs[0] == 'help':
+        parser.print_help()
+        print_command_help()
+        sys.exit(0)
+    if optargs[0] not in commands:
+        sys.stderr.write('ERROR: Unknown command "%s"\n\n' % optargs[0])
+        parser.print_help()
+        print_command_help()
+        sys.exit(1)
+
+    globals()['nabcmd_%s' % optargs[0]](options, optargs[0], optargs[1:])
 
 
 ################################
