@@ -32,14 +32,14 @@ class TestHardlinksStorage(unittest.TestCase):
         server.hostname = 'localhost'
         db.add(server)
 
-        zfs_storage = Storage()
-        zfs_storage.backup_server = server
-        zfs_storage.method = 'hardlinks'
-        zfs_storage.arg1 = '/tmp/nabhardlinksbackuptest/backups/'
-        db.add(zfs_storage)
+        storage = Storage()
+        storage.backup_server = server
+        storage.method = 'hardlinks'
+        storage.arg1 = '/tmp/nabhardlinksbackuptest/backups/'
+        db.add(storage)
 
         client1 = Host()
-        client1.backup_server = server
+        client1.storage = storage
         client1.hostname = 'localhost'
         db.add(client1)
 

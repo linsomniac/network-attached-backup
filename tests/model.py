@@ -76,7 +76,7 @@ def schema_additional(db):
     zfs_storage = db.query(Storage).first()
 
     backup1_client1 = Backup(client1, 'daily', full_checksum=False)
-    backup1_client1.storage = client1.backup_server.storage[0]
+    backup1_client1.storage = client1.storage
     backup1_client1.start_time = datetime.datetime(
             2012, 01, 02, 00, 00, 00)
     backup1_client1.end_time = datetime.datetime(2012, 01, 02, 00, 07, 32)
@@ -87,7 +87,7 @@ def schema_additional(db):
     db.add(backup1_client1)
 
     backup2_client1 = Backup(client1, 'daily', full_checksum=False)
-    backup2_client1.storage = client1.backup_server.storage[0]
+    backup2_client1.storage = client1.storage
     backup2_client1.start_time = datetime.datetime(
             2012, 01, 01, 00, 00, 01)
     backup2_client1.end_time = datetime.datetime(2012, 01, 01, 00, 8, 11)
@@ -98,7 +98,7 @@ def schema_additional(db):
     db.add(backup2_client1)
 
     backup1_client2 = Backup(client2, 'daily', full_checksum=False)
-    backup1_client2.storage = client2.backup_server.storage[0]
+    backup1_client2.storage = client2.storage
     backup1_client2.start_time = datetime.datetime(
             2012, 01, 02, 00, 00, 00)
     backup1_client2.end_time = datetime.datetime(2012, 01, 02, 00, 07, 32)
@@ -109,7 +109,7 @@ def schema_additional(db):
     db.add(backup1_client2)
 
     backup2_client2 = Backup(client2, 'weekly', full_checksum=False)
-    backup2_client2.storage = client2.backup_server.storage[0]
+    backup2_client2.storage = client2.storage
     backup2_client2.start_time = datetime.datetime(
             2012, 01, 01, 00, 01, 00)
     backup2_client2.end_time = datetime.datetime(2012, 01, 01, 00, 07, 32)
@@ -263,7 +263,7 @@ class TestModel(unittest.TestCase):
         #  invalid generation name
         with self.assertRaises(IntegrityError):
             backup1_client1 = Backup(client1, 'hourly', full_checksum=True)
-            backup1_client1.storage = client1.backup_server.storage[0]
+            backup1_client1.storage = client1.storage
             backup1_client1.start_time = datetime.datetime(
                     2012, 01, 03, 00, 00, 00)
             backup1_client1.end_time = datetime.datetime(
@@ -299,7 +299,7 @@ class TestModel(unittest.TestCase):
         #  verify that date must be set
         with self.assertRaises(IntegrityError):
             usage_server = StorageUsage()
-            usage_server.storage = client1.backup_server.storage[0]
+            usage_server.storage = client1.storage
             usage_server.total_bytes = 100000000
             usage_server.free_bytes = 90000000
             usage_server.used_bytes = 10000000
@@ -435,7 +435,7 @@ class TestModel(unittest.TestCase):
     def add_generation_backups(self, db, client1, generation):
         '''Helper for testing with FindBackupGeneration*'''
         backup = Backup(client1, generation, full_checksum=False)
-        backup.storage = client1.backup_server.storage[0]
+        backup.storage = client1.storage
         backup.start_time = datetime.datetime.now()
         backup.end_time = datetime.datetime.now()
         backup.successful = True

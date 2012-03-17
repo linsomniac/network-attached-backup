@@ -125,13 +125,13 @@ def run_backup_for_host(db, hostname):
 
     import nabstorageplugins
     storage_plugin = getattr(nabstorageplugins,
-            host.backup_server.storage[0].method)
+            host.storage.method)
     storage = storage_plugin.Storage([
-                host.backup_server.storage[0].arg1,
-                host.backup_server.storage[0].arg2,
-                host.backup_server.storage[0].arg3,
-                host.backup_server.storage[0].arg4,
-                host.backup_server.storage[0].arg5,
+                host.storage.arg1,
+                host.storage.arg2,
+                host.storage.arg3,
+                host.storage.arg4,
+                host.storage.arg5,
             ])
     if storage.rsync_inplace_compatible():
         extra_rsync_arguments.append('--inplace')
@@ -255,3 +255,16 @@ def run_command(args):
             fperr.seek(0)
             stderr = fperr.read()
     return Return(stdout, stderr, exitcode)
+
+
+def get_storage_plugin(name):
+    '''Return the Storage() class for the specified plugin.
+
+    .. py:attribute:: name
+
+    The name identifying the storage plugin, for example "hardlinks".
+
+    :rtype: Object A Storage() class.
+    '''
+    import nabstorageplugins
+    return getattr(nabstorageplugins, name)

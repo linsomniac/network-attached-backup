@@ -136,9 +136,9 @@ class Storage(Base):
 class Host(Base):
     '''A backed-up host.
 
-    .. py:attribute:: backup_server
+    .. py:attribute:: storage
 
-    Reference to the :py:class:`BackupServer` that this host is backed up to.
+    Reference to the :py:class:`Storage` that this host is backed up to.
 
     .. py:attribute:: hostname
 
@@ -172,9 +172,8 @@ class Host(Base):
 
     __tablename__ = 'hosts'
     id = Column(Integer, primary_key=True)
-    backup_server_id = Column(Integer, ForeignKey('backup_servers.id'))
-    backup_server = relationship(BackupServer, order_by=id,
-            backref='hosts')
+    storage_id = Column(Integer, ForeignKey('storage.id'))
+    storage = relationship(Storage, order_by=id, backref='hosts')
     hostname = Column(String, nullable=False, unique=True)
     ip_address = Column(String)
     active = Column(Boolean, default=True)

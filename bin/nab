@@ -92,6 +92,50 @@ def nabcmd_listservers(global_options, command, args):
         print host.hostname
 
 
+def nabcmd_newstorage(global_options, command, args):
+    '''Create a storage backend
+    '''
+    parser = optparse.OptionParser(
+            usage='%prog [GLOBAL ARGS] newstorage <BACKUP_SERVER> '
+                '<METHOD> [METHOD_ARGS]')
+    (options, optargs) = parser.parse_args(args=args)
+
+    if len(optargs) != 2:
+        sys.stderr.write('ERROR: Backup server and method must be specified '
+                'on command-line\n\n')
+        parser.print_usage()
+        sys.exit(1)
+
+    db = nabdb.session()
+    server = db.query(BackupServer).filter_by(hostname=optargs[0]).first()
+
+    storage = Storage()
+    storage.backup_server = server
+    storage.method = optargs[1]
+    if len(optargs) == 3: storage.arg1 = optargs[2]
+    if len(optargs) == 4: storage.arg2 = optargs[3]
+    if len(optargs) == 5: storage.arg3 = optargs[4]
+    if len(optargs) == 6: storage.arg4 = optargs[5]
+    if len(optargs) == 7: storage.arg5 = optargs[6]
+
+    db.add(storage)
+    db.commit()
+
+
+def nabcmd_liststorage(global_options, command, args):
+    '''List available storage backends.
+    '''
+    parser = optparse.OptionParser(
+            usage='%prog [GLOBAL ARGS] liststorage [ARGS]')
+    (options, optargs) = parser.parse_args(args=args)
+
+    db = nabdb.session()
+    for row in db.query(Storage).order_by(Storage.id):
+        print '%s (%s: %s)' % (( row.id, row.method )
+                + [ x for x in ( row.arg1, row.arg2, row.arg3, row.arg4,
+                    row.arg5 ) if x ])
+
+
 def print_command_help():
     commands = [x[7:] for x in globals().keys() if x.startswith('nabcmd_')]
 
