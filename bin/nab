@@ -132,8 +132,67 @@ def nabcmd_liststorage(global_options, command, args):
     db = nabdb.session()
     for row in db.query(Storage).order_by(Storage.id):
         print '%s (%s: %s)' % (( row.id, row.method )
-                + [ x for x in ( row.arg1, row.arg2, row.arg3, row.arg4,
-                    row.arg5 ) if x ])
+                + tuple([ x for x in ( row.arg1, row.arg2, row.arg3, row.arg4,
+                    row.arg5 ) if x ]))
+
+
+def nabcmd_newhost(global_options, command, args):
+    '''Create a host
+    '''
+    parser = optparse.OptionParser(
+            usage='%prog [GLOBAL ARGS] newhost [ARGS] <HOSTNAME> <STORAGE_ID>')
+    parser.add_option('-i', '--ip-address', dest='ip_address',
+            help='IP address of host (otherwise, hostname is used)',
+            metavar='ADDRESS')
+    parser.add_option('-a', '--active', dest='active',
+            help='Are backups being performed on the host?',
+            default=None, choices=['y','n'], metavar='ACTIVE')
+    parser.add_option('-s', '--window-start', dest='window_start',
+            help='Beginning of backup window.',
+            metavar='WINDOW_START')
+    parser.add_option('-e', '--window-end', dest='window_end',
+            help='End of backup window.',
+            metavar='WINDOW_END')
+    (options, optargs) = parser.parse_args(args=args)
+
+    if len(optargs) != 2:
+        sys.stderr.write('ERROR: Hostname and storage ID must be specified '
+                'on command-line\n\n')
+        parser.print_usage()
+        sys.exit(1)
+
+    db = nabdb.session()
+
+    storage = db.query(Storage).filter_by(id=int(optargs[1])).first()
+
+    host = Host()
+    host.storage = storage
+    host.hostname = optargs[0]
+    if options.ip_address != None:
+        host.ip_address = options.ip_address
+    if options.active != None:
+        host.active = options.active == 'y'
+    if options.window_start != None:
+        host.window_start = datetime.datetime.strptime(options.window_start,
+                '%H:%M:%S').time()
+    if options.window_end != None:
+        host.window_end = datetime.datetime.strptime(options.window_end,
+                '%H:%M:%S').time()
+
+    db.add(host)
+    db.commit()
+
+
+def nabcmd_listhost(global_options, command, args):
+    '''List available hosts
+    '''
+    parser = optparse.OptionParser(
+            usage='%prog [GLOBAL ARGS] listhost [ARGS]')
+    (options, optargs) = parser.parse_args(args=args)
+
+    db = nabdb.session()
+    for row in db.query(Host).order_by(Host.hostname):
+        print '%s' % ( row.hostname, )
 
 
 def print_command_help():
