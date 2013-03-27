@@ -1,6 +1,7 @@
+TESTS = $(wildcard test_*.py)
+
 test:
-	python model.py
-	python storage.py
-	python supp.py
-	python hardlinksbackup.py
-	python nabcli.py
+	@- $(foreach TEST,$(TESTS), \
+		echo === Running test: $(TEST); \
+		python $(TEST); \
+		)
