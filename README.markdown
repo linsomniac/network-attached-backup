@@ -6,6 +6,10 @@ Author: Sean Reifschneder <jafo@tummy.com>
 Status
 ------
 
+2013-03-26: I haven't had much attention for this over the last year (can't
+believe it's been that long), but it's still on the list of things I'd like
+to work on.  I'm trying to make some progress with it now.
+
 2012-01-15: First set of backups run using this code.  These were done in
 via the tests, but did simulate a full (but small) backup data-set.  This
 is a good indicator that the heart of the backup code is complete, but
