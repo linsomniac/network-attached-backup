@@ -21,7 +21,7 @@ else:
 
 import unittest
 import subprocess
-import model
+import test_model
 from nabdb import *
 
 
@@ -39,7 +39,7 @@ class TestNabCli(unittest.TestCase):
         '''Test the nabcli for basic invocation ability.'''
 
         db = nabdb.session()
-        model.schema_basic(db)
+        test_model.schema_basic(db)
 
         with self.assertRaises(subprocess.CalledProcessError):
             subprocess.check_output([nabcmd])
